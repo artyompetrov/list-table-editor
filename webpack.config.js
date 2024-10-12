@@ -3,6 +3,7 @@
 'use strict';
 
 const path = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
@@ -42,7 +43,24 @@ const extensionConfig = {
   },
   devtool: 'nosources-source-map',
   infrastructureLogging: {
-    level: "log", // enables logging required for problem matchers
+    level: "info", // enables logging required for problem matchers
   },
+  plugins: [
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, 'node_modules/tabulator-tables/dist/js/tabulator.min.js'),
+          to: path.resolve(__dirname, 'media'),
+          noErrorOnMissing: false,
+        },
+        {
+          from: path.resolve(__dirname, 'node_modules/tabulator-tables/dist/css/tabulator.min.css'),
+          to: path.resolve(__dirname, 'media'),
+          noErrorOnMissing: false,
+        },
+      ],
+    }),
+  ],
+  
 };
 module.exports = [ extensionConfig ];

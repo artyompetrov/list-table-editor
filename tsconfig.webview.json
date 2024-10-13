@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+	  "target": "ES2022",
+	  "module": "ESNext",
+	  "lib": ["DOM", "ES2022"],
+	  "strict": true,
+	  "esModuleInterop": true,
+	  "allowSyntheticDefaultImports": true,
+	  "moduleResolution": "Node",
+	  "sourceMap": true,
+	  "rootDir": "src",
+	  "outDir": "./media/",
+	  "forceConsistentCasingInFileNames": true
+	},
+	"include": ["src/tableEditor.ts"],
+	"exclude": ["node_modules"]
+  }

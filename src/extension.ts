@@ -78,8 +78,6 @@ function parseListTable(tableText: string): any[] {
 }
 
 function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, tableData: any[]) {
-    //const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'tabulator.min.js'));
-    //const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'tabulator.min.css'));
     const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'tableEditor.js'));
 
 

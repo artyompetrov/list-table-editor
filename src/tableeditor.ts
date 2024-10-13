@@ -1,4 +1,6 @@
 import { Tabulator, Editor } from 'tabulator-tables';
+import 'tabulator-tables/dist/css/tabulator.min.css';
+
 interface vscode {
     postMessage(message: any): void;
 }

@@ -1,5 +1,6 @@
-import { Tabulator, Editor } from 'tabulator-tables';
+import { Tabulator, ColumnDefinition, EditModule  } from 'tabulator-tables';
 import 'tabulator-tables/dist/css/tabulator.min.css';
+import './tabulator.css';
 
 interface vscode {
     postMessage(message: any): void;
@@ -7,9 +8,9 @@ interface vscode {
 
 declare const vscode: vscode;
 
+Tabulator.registerModule([EditModule]);
 
 (function () {
-
 
     const tableDataElement = document.getElementById('table-data');
     
@@ -18,21 +19,30 @@ declare const vscode: vscode;
         return;
     }
 
+    
 
     const tableData: any[] = JSON.parse(tableDataElement.textContent || '[]');
-
-
-    const columns = Object.keys(tableData[0] || {}).map((key) => {
-        return { title: key, field: key, editor: "input" as Editor };  // Явно указываем тип для редактора
-    });
 
     // Создаем таблицу с помощью Tabulator
     const table = new Tabulator("#table", {
         data: tableData,
-        layout: "fitColumns",
-        columns: columns,
-        selectable: false,
-        autoResize: true
+        resizableColumnFit:true,
+        resizableRows:true,
+        columnDefaults:{
+            maxWidth:700,
+            editor: "textarea",
+            editorParams: {
+                
+            }
+        },
+        layout: "fitDataFill",
+        selectable: true,
+        movableColumns:true, 
+        height: "100%", 
+        autoResize: true,
+        autoColumns:true, 
+        history:true,  
+        headerVisible: false,
     });
 
     // Добавляем обработчик для кнопки сохранения

@@ -1,4 +1,4 @@
-import { Tabulator, ColumnDefinition, EditModule  } from 'tabulator-tables';
+import { TabulatorFull as Tabulator, ColumnDefinition, EditModule, MoveRowsModule, MoveColumnsModule  } from 'tabulator-tables';
 import 'tabulator-tables/dist/css/tabulator.min.css';
 import './tabulator.css';
 
@@ -8,7 +8,7 @@ interface vscode {
 
 declare const vscode: vscode;
 
-Tabulator.registerModule([EditModule]);
+Tabulator.registerModule([EditModule, MoveRowsModule, MoveColumnsModule]);
 
 (function () {
 
@@ -28,21 +28,24 @@ Tabulator.registerModule([EditModule]);
         data: tableData,
         resizableColumnFit:true,
         resizableRows:true,
+        rowHeader:{
+            headerSort:false, resizable: false, minWidth:30, width:30, rowHandle:true, formatter:"rownum"
+        },
+        
         columnDefaults:{
             maxWidth:700,
             editor: "textarea",
-            editorParams: {
-                
-            }
+            headerSort: false
         },
         layout: "fitDataFill",
         selectable: true,
         movableColumns:true, 
+        movableRows: true,
         height: "100%", 
         autoResize: true,
         autoColumns:true, 
         history:true,  
-        headerVisible: false,
+        headerVisible: true,
     });
 
     // Добавляем обработчик для кнопки сохранения

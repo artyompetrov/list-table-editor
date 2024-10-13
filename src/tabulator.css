@@ -13,3 +13,8 @@ html, body {
     height: 100%;
     width: 100%;
 }
+
+.dragging {
+    opacity: 0.5;
+    border: 2px dashed #000;
+}

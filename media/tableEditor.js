@@ -30216,7 +30216,12 @@ html, body {
 #table {
     height: 100%;
     width: 100%;
-}`, "",{"version":3,"sources":["webpack://./src/tabulator.css"],"names":[],"mappings":"AAAA;IACI,qBAAqB;IACrB,YAAY;AAChB;;AAEA;IACI,WAAW;IACX,SAAS;IACT,UAAU;AACd;;AAEA;IACI,YAAY;IACZ,WAAW;AACf","sourceRoot":""}]);
+}
+
+.dragging {
+    opacity: 0.5;
+    border: 2px dashed #000;
+}`, "",{"version":3,"sources":["webpack://./src/tabulator.css"],"names":[],"mappings":"AAAA;IACI,qBAAqB;IACrB,YAAY;AAChB;;AAEA;IACI,WAAW;IACX,SAAS;IACT,UAAU;AACd;;AAEA;IACI,YAAY;IACZ,WAAW;AACf;;AAEA;IACI,YAAY;IACZ,uBAAuB;AAC3B","sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -30305,7 +30310,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.Tabulator.registerModule([tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.EditModule]);
+tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.TabulatorFull.registerModule([tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.EditModule, tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.MoveRowsModule, tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.MoveColumnsModule]);
 (function () {
     const tableDataElement = document.getElementById('table-data');
     if (!tableDataElement) {
@@ -30314,23 +30319,27 @@ tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.Tabulator.registerModule([tabulato
     }
     const tableData = JSON.parse(tableDataElement.textContent || '[]');
     // Создаем таблицу с помощью Tabulator
-    const table = new tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.Tabulator("#table", {
+    const table = new tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.TabulatorFull("#table", {
         data: tableData,
         resizableColumnFit: true,
         resizableRows: true,
+        rowHeader: {
+            headerSort: false, resizable: false, minWidth: 30, width: 30, rowHandle: true, formatter: "rownum"
+        },
         columnDefaults: {
             maxWidth: 700,
             editor: "textarea",
-            editorParams: {}
+            headerSort: false
         },
         layout: "fitDataFill",
         selectable: true,
         movableColumns: true,
+        movableRows: true,
         height: "100%",
         autoResize: true,
         autoColumns: true,
         history: true,
-        headerVisible: false,
+        headerVisible: true,
     });
     // Добавляем обработчик для кнопки сохранения
     const saveButton = document.getElementById('saveButton');

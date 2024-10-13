@@ -99,6 +99,7 @@ function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, ta
         </style>
     </head>
     <body>
+        <div id="table-data" style="display: none;">${JSON.stringify(tableData)}</div>
         <div id="table"></div>
         <button id="saveButton">Сохранить изменения</button>
         <script nonce="${nonce}" src="${scriptUri}"></script>

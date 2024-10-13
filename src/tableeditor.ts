@@ -1,9 +1,12 @@
 import { Tabulator, Editor } from 'tabulator-tables';
-import "vscode-webview"
+interface vscode {
+    postMessage(message: any): void;
+}
+
+declare const vscode: vscode;
 
 
 (function () {
-    const vscode = acquireVsCodeApi();
 
 
     const tableDataElement = document.getElementById('table-data');

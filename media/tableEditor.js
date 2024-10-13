@@ -29643,16 +29643,12 @@ var exports = __webpack_exports__;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const tabulator_tables_1 = __webpack_require__(1);
 (function () {
-    const vscode = acquireVsCodeApi();
-    // Найдем элемент с id 'table-data'
     const tableDataElement = document.getElementById('table-data');
     if (!tableDataElement) {
         console.error('Element with id "table-data" not found');
         return;
     }
-    // Парсим данные таблицы
     const tableData = JSON.parse(tableDataElement.textContent || '[]');
-    // Определяем колонки на основе ключей данных
     const columns = Object.keys(tableData[0] || {}).map((key) => {
         return { title: key, field: key, editor: "input" }; // Явно указываем тип для редактора
     });

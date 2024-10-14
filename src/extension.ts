@@ -6,20 +6,41 @@ export function activate(context: vscode.ExtensionContext) {
             const editor = vscode.window.activeTextEditor;
             if (editor) {
                 const document = editor.document;
-                const selectedText = document.getText(editor.selection);
+                // Get the document text
+                const documentText = editor.document.getText();
 
+                // Get the cursor position
+                const cursorPosition = editor.selection.active;
+                
+                // Find the start of the list-table by searching upwards
+                let startTablePosition = documentText.lastIndexOf('::{list-table}', editor.document.offsetAt(cursorPosition));
+                if (startTablePosition === -1) {
+                    vscode.window.showErrorMessage('Start of the table (:: {list-table}) not found.');
+                    return;
+                }
+            
+                // Find the end of the list-table by searching downwards
+                let endTablePosition = documentText.indexOf(':::', editor.document.offsetAt(cursorPosition));
+                if (endTablePosition === -1) {
+                    vscode.window.showErrorMessage('End of the table (::: end) not found.');
+                    return;
+                }
+
+                // Get the text between startTablePosition and endTablePosition
+                const startSelectionPos = editor.document.positionAt(startTablePosition);
+                const endSelectionPos = editor.document.positionAt(endTablePosition + 3); // Include ':::' in the selection
+                const selectedText = document.getText(new vscode.Range(startSelectionPos, endSelectionPos));
+
+                // Ensure the file is a Markdown file
                 if (document.languageId !== 'markdown') {
                     vscode.window.showErrorMessage('This command can be run only for Markdown-files.');
                     return;
                 }
 
-                if (selectedText.trim().length === 0) {
-                    vscode.window.showErrorMessage('Please select the table content.');
-                    return;
-                }
-
+                // Parse the table content between the markers
                 const parsedTable = parseListTable(selectedText);
 
+                // Create and show the webview panel for table editing
                 const panel = vscode.window.createWebviewPanel(
                     'tableEditor',
                     'Table Editor',
@@ -32,6 +53,7 @@ export function activate(context: vscode.ExtensionContext) {
 
                 panel.webview.html = getWebviewContent(panel.webview, context.extensionUri, parsedTable);
 
+                // Handle messages from the webview
                 panel.webview.onDidReceiveMessage(
                     message => {
                         switch (message.command) {
@@ -49,6 +71,7 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
 }
+
 
 function parseListTable(tableText: string): any[] {
     const rows: any[] = [];
@@ -105,34 +128,61 @@ function updateTableInDocument(editor: vscode.TextEditor, tableData: any[]) {
     let newTableText = '';
 
     tableData.forEach(row => {
-        newTableText += '* - ' + Object.values(row).map(element => String(element).split('\n').join('\n    ')).join('\n  - ') + '\n';
+        newTableText += '* - ' + Object.values(row)
+            .map(element => String(element).split('\n').join('\n    '))
+            .join('\n  - ') + '\n';
     });
 
-    // Save the start position before the edit
-    const startPos = editor.selection.start;
+    // Normalize line endings to CRLF if needed
+    newTableText = newTableText.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
+    newTableText = ":::{list-table}\n" + newTableText + ":::";
 
-    // Create an edit to delete the selected text and insert new text
+    // Get the document text
+    const documentText = editor.document.getText();
+
+    // Get the cursor position
+    const cursorPosition = editor.selection.active;
+
+    // Find the start of the list-table by searching upwards
+    let startTablePosition = documentText.lastIndexOf(':::{list-table}', editor.document.offsetAt(cursorPosition));
+    if (startTablePosition === -1) {
+        vscode.window.showErrorMessage('Start of the table (::: {list-table}) not found.');
+        return;
+    }
+
+    // Find the end of the list-table by searching downwards
+    let endTablePosition = documentText.indexOf(':::', editor.document.offsetAt(cursorPosition));
+    if (endTablePosition === -1) {
+        vscode.window.showErrorMessage('End of the table (::: end) not found.');
+        return;
+    }
+
+    // Adjust positions to ensure we are selecting the full range of text
+    const startSelectionPos = editor.document.positionAt(startTablePosition);
+    const endSelectionPos = editor.document.positionAt(endTablePosition + 3); // Include ':::' in the selection
+
+    // Create an edit to replace the selected text with new table text
     const edit = new vscode.WorkspaceEdit();
-    edit.delete(editor.document.uri, editor.selection);
-    edit.insert(editor.document.uri, startPos, newTableText);
+    const tableRange = new vscode.Range(startSelectionPos, endSelectionPos);
+    edit.replace(editor.document.uri, tableRange, newTableText);
 
     // Apply the edit
     vscode.workspace.applyEdit(edit).then(success => {
         if (success) {
-            // Calculate the new selection range
-            const newStart = startPos;
-            const newEnd = editor.document.positionAt(
-                editor.document.offsetAt(startPos) + newTableText.length
-            );
-
-            // Set the new selection
-            editor.selection = new vscode.Selection(newStart, newEnd);
-            editor.revealRange(new vscode.Range(newStart, newEnd), vscode.TextEditorRevealType.InCenter);
+            // Set the new cursor position to be right after `::{list-table}`
+            const newCursorPos = editor.document.positionAt(startTablePosition + '::{list-table}\n'.length);
+            
+            // Update the selection to the new cursor position
+            editor.selection = new vscode.Selection(newCursorPos, newCursorPos);
+            
+            // Reveal the new cursor position in the editor
+            editor.revealRange(new vscode.Range(newCursorPos, newCursorPos), vscode.TextEditorRevealType.InCenter);
         } else {
             vscode.window.showErrorMessage('Failed to update the table.');
         }
     });
 }
+
 
 
 function getNonce() {

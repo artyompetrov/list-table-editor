@@ -6,49 +6,45 @@ export function activate(context: vscode.ExtensionContext) {
             const editor = vscode.window.activeTextEditor;
             if (editor) {
                 const document = editor.document;
+                const selectedText = document.getText(editor.selection);
 
                 if (document.languageId !== 'markdown') {
                     vscode.window.showErrorMessage('This command can be run only for Markdown-files.');
                     return;
                 }
 
-                const text = document.getText();
-
-                const listTableRegex = /:::{list-table}[\s\S]*?:::/gm;
-                const match = listTableRegex.exec(text);
-
-                if (match) {
-                    const tableText = match[0];
-                    const parsedTable = parseListTable(tableText);
-
-                    const panel = vscode.window.createWebviewPanel(
-                        'tableEditor',
-                        'Редактор таблицы',
-                        vscode.ViewColumn.Beside,
-                        {
-                            enableScripts: true,
-                            localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')]
-                        }
-                    );
-
-                    panel.webview.html = getWebviewContent(panel.webview, context.extensionUri, parsedTable);
-
-                    panel.webview.onDidReceiveMessage(
-                        message => {
-                            switch (message.command) {
-                                case 'updateTable':
-                                    updateTableInDocument(document, message.data);
-                                    break;
-                            }
-                        },
-                        undefined,
-                        context.subscriptions
-                    );
-                } else {
-                    vscode.window.showErrorMessage('В этом Markdown-файле не найдена list-table.');
+                if (selectedText.trim().length === 0) {
+                    vscode.window.showErrorMessage('Please select the table content.');
+                    return;
                 }
+
+                const parsedTable = parseListTable(selectedText);
+
+                const panel = vscode.window.createWebviewPanel(
+                    'tableEditor',
+                    'Table Editor',
+                    vscode.ViewColumn.Beside,
+                    {
+                        enableScripts: true,
+                        localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')]
+                    }
+                );
+
+                panel.webview.html = getWebviewContent(panel.webview, context.extensionUri, parsedTable);
+
+                panel.webview.onDidReceiveMessage(
+                    message => {
+                        switch (message.command) {
+                            case 'updateTable':
+                                updateTableInDocument(editor, message.data);
+                                break;
+                        }
+                    },
+                    undefined,
+                    context.subscriptions
+                );
             } else {
-                vscode.window.showErrorMessage('Активный редактор не найден.');
+                vscode.window.showErrorMessage('No active editor found.');
             }
         })
     );
@@ -80,12 +76,11 @@ function parseListTable(tableText: string): any[] {
 function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, tableData: any[]) {
     const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'tableEditor.js'));
 
-
     const nonce = getNonce();
 
     return `
     <!DOCTYPE html>
-    <html lang="ru">
+    <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta http-equiv="Content-Security-Policy"
@@ -105,31 +100,40 @@ function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, ta
     `;
 }
 
-function updateTableInDocument(document: vscode.TextDocument, tableData: any[]) {
-    // Преобразование данных обратно в формат list-table
-    let newTableText = ':::{list-table}\n';
+function updateTableInDocument(editor: vscode.TextEditor, tableData: any[]) {
+    // Convert data back to list-table format
+    let newTableText = '';
 
     tableData.forEach(row => {
-        newTableText += '*   - ' + Object.values(row).join('\n    - ') + '\n';
+        newTableText += '* - ' + Object.values(row).map(element => String(element).split('\n').join('\n    ')).join('\n  - ') + '\n';
     });
 
-    newTableText += ':::\n';
+    // Save the start position before the edit
+    const startPos = editor.selection.start;
 
-    // Обновление документа
+    // Create an edit to delete the selected text and insert new text
     const edit = new vscode.WorkspaceEdit();
-    const fullText = document.getText();
-    const listTableRegex = /:::{list-table}[\s\S]*?:::/gm;
-    const match = listTableRegex.exec(fullText);
+    edit.delete(editor.document.uri, editor.selection);
+    edit.insert(editor.document.uri, startPos, newTableText);
 
-    if (match) {
-        const startPos = document.positionAt(match.index);
-        const endPos = document.positionAt(match.index + match[0].length);
+    // Apply the edit
+    vscode.workspace.applyEdit(edit).then(success => {
+        if (success) {
+            // Calculate the new selection range
+            const newStart = startPos;
+            const newEnd = editor.document.positionAt(
+                editor.document.offsetAt(startPos) + newTableText.length
+            );
 
-        edit.replace(document.uri, new vscode.Range(startPos, endPos), newTableText);
-        vscode.workspace.applyEdit(edit);
-        vscode.window.showInformationMessage('Таблица обновлена.');
-    }
+            // Set the new selection
+            editor.selection = new vscode.Selection(newStart, newEnd);
+            editor.revealRange(new vscode.Range(newStart, newEnd), vscode.TextEditorRevealType.InCenter);
+        } else {
+            vscode.window.showErrorMessage('Failed to update the table.');
+        }
+    });
 }
+
 
 function getNonce() {
     let text = '';

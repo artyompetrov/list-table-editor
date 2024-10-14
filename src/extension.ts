@@ -75,22 +75,42 @@ export function activate(context: vscode.ExtensionContext) {
 
 function parseListTable(tableText: string): any[] {
     const rows: any[] = [];
-    const rowRegex = /\*\s+-\s+([^\n]+)((?:\s+-\s+[^\n]+)*)/g;
-    let match: RegExpExecArray | null;
+    const lines = tableText.split('\n');
+    let currentRow: any = null;
+    let currentColIndex = 1;
 
-    while ((match = rowRegex.exec(tableText)) !== null) {
-        const row: any = {};
-        row['col1'] = match[1];
-        if (match[2]) {
-            const additionalCells = match[2].match(/\s+-\s+([^\n]+)/g);
-            if (additionalCells) {
-                additionalCells.forEach((cellMatch, index) => {
-                    const cellContent = cellMatch.replace(/\s+-\s+/, '');
-                    row[`col${index + 2}`] = cellContent;
-                });
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // Проверяем начало новой строки таблицы
+        if (/^\*\s+-\s+/.test(line)) {
+            // Сохраняем предыдущую строку, если она есть
+            if (currentRow) {
+                rows.push(currentRow);
+            }
+            currentRow = {};
+            currentColIndex = 1;
+            const cellContent = line.replace(/^\*\s+-\s+/, '').trim();
+            currentRow[`col${currentColIndex}`] = cellContent;
+        }
+        // Проверяем начало новой ячейки в той же строке
+        else if (/^\s+-\s+/.test(line)) {
+            currentColIndex++;
+            const cellContent = line.replace(/^\s+-\s+/, '').trim();
+            currentRow[`col${currentColIndex}`] = cellContent;
+        }
+        // Проверяем продолжение ячейки (многострочный текст)
+        else if (/^\s{4,}/.test(line)) {
+            const continuationContent = line.trim();
+            if (currentRow && currentRow[`col${currentColIndex}`]) {
+                currentRow[`col${currentColIndex}`] += '\n' + continuationContent;
             }
         }
-        rows.push(row);
+    }
+
+    // Добавляем последнюю строку, если она есть
+    if (currentRow) {
+        rows.push(currentRow);
     }
 
     return rows;

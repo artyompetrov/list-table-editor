@@ -73,7 +73,7 @@ function sanitizeHTML(value:string){
             maxWidth:600,
             editor: "textarea",
             headerSort: false,
-            formatter:/* "textarea" */ customTextAreaFormatter,
+            formatter: "textarea" /* customTextAreaFormatter*/,
             headerContextMenu: 
             [
                 {

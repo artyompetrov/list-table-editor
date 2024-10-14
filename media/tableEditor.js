@@ -30384,7 +30384,7 @@ function sanitizeHTML(value) {
             maxWidth: 600,
             editor: "textarea",
             headerSort: false,
-            formatter: /* "textarea" */ customTextAreaFormatter,
+            formatter: "textarea" /* customTextAreaFormatter*/,
             headerContextMenu: [
                 {
                     label: '<span style="color: red;">DELETE</span>',

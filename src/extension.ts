@@ -13,9 +13,9 @@ export function activate(context: vscode.ExtensionContext) {
                 const cursorPosition = editor.selection.active;
                 
                 // Find the start of the list-table by searching upwards
-                let startTablePosition = documentText.lastIndexOf('::{list-table}', editor.document.offsetAt(cursorPosition));
+                let startTablePosition = documentText.lastIndexOf(':::{list-table}', editor.document.offsetAt(cursorPosition));
                 if (startTablePosition === -1) {
-                    vscode.window.showErrorMessage('Start of the table (:: {list-table}) not found.');
+                    vscode.window.showErrorMessage('Start of the table (::: {list-table}) not found.');
                     return;
                 }
             

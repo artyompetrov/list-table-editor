@@ -1,6 +1,30 @@
+.invisible-symbol {
+    color: gray;
+  }
+
+
 .tabulator-cell {
     white-space: pre-wrap;
-    height: auto;
+    word-wrap: break-word;
+    height: auto; 
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.tabulator-cell input,
+.tabulator-cell textarea {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    padding: 0;
+    border: none;
+    background-color: transparent;
+    box-shadow: none;
+    outline: none;
+}
+
+.tabulator-row {
+    height: auto; 
 }
 
 html, body {
@@ -12,9 +36,4 @@ html, body {
 #table {
     height: 100%;
     width: 100%;
-}
-
-.dragging {
-    opacity: 0.5;
-    border: 2px dashed #000;
 }

@@ -30202,9 +30202,33 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, `.tabulator-cell {
+___CSS_LOADER_EXPORT___.push([module.id, `.invisible-symbol {
+    color: gray;
+  }
+
+
+.tabulator-cell {
     white-space: pre-wrap;
-    height: auto;
+    word-wrap: break-word;
+    height: auto; 
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.tabulator-cell input,
+.tabulator-cell textarea {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    padding: 0;
+    border: none;
+    background-color: transparent;
+    box-shadow: none;
+    outline: none;
+}
+
+.tabulator-row {
+    height: auto; 
 }
 
 html, body {
@@ -30217,11 +30241,7 @@ html, body {
     height: 100%;
     width: 100%;
 }
-
-.dragging {
-    opacity: 0.5;
-    border: 2px dashed #000;
-}`, "",{"version":3,"sources":["webpack://./src/tabulator.css"],"names":[],"mappings":"AAAA;IACI,qBAAqB;IACrB,YAAY;AAChB;;AAEA;IACI,WAAW;IACX,SAAS;IACT,UAAU;AACd;;AAEA;IACI,YAAY;IACZ,WAAW;AACf;;AAEA;IACI,YAAY;IACZ,uBAAuB;AAC3B","sourceRoot":""}]);
+`, "",{"version":3,"sources":["webpack://./src/tabulator.css"],"names":[],"mappings":"AAAA;IACI,WAAW;EACb;;;AAGF;IACI,qBAAqB;IACrB,qBAAqB;IACrB,YAAY;IACZ,oBAAoB;IACpB,kBAAkB;AACtB;;AAEA;;IAEI,oBAAoB;IACpB,kBAAkB;IAClB,oBAAoB;IACpB,UAAU;IACV,YAAY;IACZ,6BAA6B;IAC7B,gBAAgB;IAChB,aAAa;AACjB;;AAEA;IACI,YAAY;AAChB;;AAEA;IACI,WAAW;IACX,SAAS;IACT,UAAU;AACd;;AAEA;IACI,YAAY;IACZ,WAAW;AACf","sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -30311,12 +30331,44 @@ __webpack_require__.r(__webpack_exports__);
 
 
 tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.TabulatorFull.registerModule([tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.EditModule, tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.MoveRowsModule, tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.MoveColumnsModule]);
+function emptyToSpace(value) {
+    return value === null || typeof value === "undefined" || value === "" ? "&nbsp;" : value;
+}
+function sanitizeHTML(value) {
+    if (value) {
+        var entityMap = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '/': '&#x2F;',
+            '`': '&#x60;',
+            '=': '&#x3D;'
+        };
+        return String(value).replace(/[&<>"'`=/]/g, function (s) {
+            return entityMap[s];
+        });
+    }
+    else {
+        return value;
+    }
+}
 (function () {
     const tableDataElement = document.getElementById('table-data');
     if (!tableDataElement) {
         console.error('Element with id "table-data" not found');
         return;
     }
+    const customTextAreaFormatter = function (cell, formatterParams, onRendered) {
+        cell.getElement().style.whiteSpace = "pre-wrap";
+        onRendered(function () {
+            cell.getElement().style.height = "0px";
+        });
+        return emptyToSpace(sanitizeHTML(cell.getValue())).trim()
+            .replace(/ /g, '<span class="invisible-symbol">·</span>')
+            .replace(/\n/g, '<span class="invisible-symbol">↵</span>\n');
+    };
     const tableData = JSON.parse(tableDataElement.textContent || '[]');
     // Создаем таблицу с помощью Tabulator
     const table = new tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.TabulatorFull("#table", {
@@ -30324,27 +30376,74 @@ tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.TabulatorFull.registerModule([tabu
         resizableColumnFit: true,
         resizableRows: true,
         rowHeader: {
-            headerSort: false, resizable: false, minWidth: 30, width: 30, rowHandle: true, formatter: "rownum"
+            headerSort: false, resizable: false, minWidth: 30, rowHandle: true, formatter: "rownum"
         },
         columnDefaults: {
-            maxWidth: 700,
+            maxWidth: 600,
             editor: "textarea",
-            headerSort: false
+            headerSort: false,
+            formatter: /*"textarea" */ customTextAreaFormatter,
+            headerContextMenu: [
+                {
+                    label: '<span style="color: red;">DELETE</span>',
+                    action: function (e, column) {
+                        table.deleteColumn(column);
+                    }
+                },
+                {
+                    separator: true,
+                },
+                {
+                    label: '<span style="color: blue;">add &larr;</span>',
+                    action: function (e, column) {
+                        table.addColumn({ title: "new" }, true, column);
+                    }
+                },
+                {
+                    label: '<span style="color: blue;">add &rarr;</span>',
+                    action: function (e, column) {
+                        table.addColumn({ title: "new" }, false, column);
+                    }
+                }
+            ]
         },
         layout: "fitDataFill",
         selectable: true,
         movableColumns: true,
         movableRows: true,
-        height: "100%",
         autoResize: true,
         autoColumns: true,
         history: true,
         headerVisible: true,
+        rowContextMenu: [
+            {
+                label: '<span style="color: red;">DELETE</span>',
+                action: function (e, row) {
+                    table.deleteRow(row);
+                }
+            },
+            {
+                separator: true,
+            },
+            {
+                label: '<span style="color: blue;">add &uarr;</span>',
+                action: function (e, row) {
+                    table.addRow({}, true, row);
+                }
+            },
+            {
+                label: '<span style="color: blue;">add &darr;</span>',
+                action: function (e, row) {
+                    table.addRow({}, false, row);
+                }
+            }
+        ]
     });
-    // Добавляем обработчик для кнопки сохранения
     const saveButton = document.getElementById('saveButton');
     if (saveButton) {
         saveButton.addEventListener('click', () => {
+            table.addColumn({ title: "Gender", field: "gender" }, false);
+            return;
             const data = table.getData();
             vscode.postMessage({ command: 'updateTable', data: data });
         });

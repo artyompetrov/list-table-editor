@@ -6,8 +6,6 @@ interface vscode {
     postMessage(message: any): void;
 }
 
-declare const vscode: vscode;
-
 TabulatorFull.registerModule([EditModule, MoveRowsModule, MoveColumnsModule, InteractionModule]);
 
 function emptyToSpace(value:string){
@@ -36,7 +34,8 @@ function sanitizeHTML(value:string){
 }
 
 (function () {
-
+    // @ts-ignore
+    const vscode: vscode = acquireVsCodeApi();
     const tableDataElement = document.getElementById('table-data');
     
     if (!tableDataElement) {

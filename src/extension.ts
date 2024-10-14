@@ -35,10 +35,8 @@ export function activate(context: vscode.ExtensionContext) {
 
                     panel.webview.onDidReceiveMessage(
                         message => {
-                            alert("test");
                             switch (message.command) {
                                 case 'updateTable':
-                                    alert("test");
                                     updateTableInDocument(document, message.data);
                                     break;
                             }

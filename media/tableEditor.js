@@ -30355,6 +30355,8 @@ function sanitizeHTML(value) {
     }
 }
 (function () {
+    // @ts-ignore
+    const vscode = acquireVsCodeApi();
     const tableDataElement = document.getElementById('table-data');
     if (!tableDataElement) {
         console.error('Element with id "table-data" not found');

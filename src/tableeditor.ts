@@ -140,9 +140,12 @@ function sanitizeHTML(value:string){
         
     });
 
+    const saveButton = document.getElementById('saveButton');
+    if (saveButton) {
+        saveButton.addEventListener('click', () => {
+            const data = table.getData();
 
-    table.on("dataChanged", function(data){
-        let columns = table.getColumnDefinitions(); // Получаем все определения колонок
+            let columns = table.getColumnDefinitions(); // Получаем все определения колонок
         let tableData = data.map(row => {
             let rowData : {[key:string]: string} = {};
             let i = 0;
@@ -157,6 +160,12 @@ function sanitizeHTML(value:string){
         });
         
         vscode.postMessage({ command: 'updateTable', data: tableData });
-    });
+
+            vscode.postMessage({ command: 'updateTable', data: data });
+        });
+    } else {
+        console.error('Save button not found');
+    }
+
 
 })();

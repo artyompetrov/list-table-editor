@@ -30441,22 +30441,30 @@ function sanitizeHTML(value) {
             }
         ],
     });
-    table.on("dataChanged", function (data) {
-        let columns = table.getColumnDefinitions(); // Получаем все определения колонок
-        let tableData = data.map(row => {
-            let rowData = {};
-            let i = 0;
-            columns.forEach(col => {
-                if (i != 0) {
-                    let field = "col" + i;
-                    rowData[field] = row.hasOwnProperty(col.field) ? (row[field] ?? "") : ""; // Если ячейка пустая, вставляем пустую строку
-                }
-                i++;
+    const saveButton = document.getElementById('saveButton');
+    if (saveButton) {
+        saveButton.addEventListener('click', () => {
+            const data = table.getData();
+            let columns = table.getColumnDefinitions(); // Получаем все определения колонок
+            let tableData = data.map(row => {
+                let rowData = {};
+                let i = 0;
+                columns.forEach(col => {
+                    if (i != 0) {
+                        let field = "col" + i;
+                        rowData[field] = row.hasOwnProperty(col.field) ? (row[field] ?? "") : ""; // Если ячейка пустая, вставляем пустую строку
+                    }
+                    i++;
+                });
+                return rowData;
             });
-            return rowData;
+            vscode.postMessage({ command: 'updateTable', data: tableData });
+            vscode.postMessage({ command: 'updateTable', data: data });
         });
-        vscode.postMessage({ command: 'updateTable', data: tableData });
-    });
+    }
+    else {
+        console.error('Save button not found');
+    }
 })();
 
 })();

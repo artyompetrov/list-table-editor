@@ -103,64 +103,54 @@ export function activate(context: vscode.ExtensionContext) {
     );
 }
 
+interface TableRow {
+    [key: string]: string;
+}
 
-function parseListTable(tableText: string): any[] {
-    const rows: any[] = [];
+export function parseListTable(tableText: string): TableRow[] {
+    const rows: TableRow[] = [];
     const lines = tableText.split('\n');
-    let currentRow: any = null;
-    let currentColIndex = 1;
-    let rowIndentation = 0;
-    let cellIndentation = 0;
+    let currentRow: TableRow | null = null;
+    let currentColIndex = 0;
 
-    function getIndentationLevel(line: string): number {
-        const match = line.match(/^(\s*)/);
-        return match ? match[1].length : 0;
-    }
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-
-        // Пропускаем пустые строки
-        if (line.trim() === '') {
-            continue;
+    for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (trimmedLine === '' || trimmedLine === ':::{list-table}' || trimmedLine === ':::') {
+            continue; // Пропускаем пустые строки, начало и конец таблицы
         }
 
-        const lineIndentation = getIndentationLevel(line);
-
-        // Проверяем начало новой строки таблицы
-        if (/^\*\s+-\s+/.test(line)) {
-            // Сохраняем предыдущую строку, если она есть
-            if (currentRow) {
+        if (line.startsWith('* - ')) {
+            // Начало новой строки
+            if (currentRow !== null) {
                 rows.push(currentRow);
             }
             currentRow = {};
             currentColIndex = 1;
-            rowIndentation = lineIndentation;
-            cellIndentation = rowIndentation + 2; // Предполагаем, что ячейка начинается с '  - '
-            const cellContent = line.replace(/^\*\s+-\s+/, '').trim();
-            currentRow[`col${currentColIndex}`] = cellContent;
-        }
-        // Проверяем начало новой ячейки в той же строке
-        else if (lineIndentation === cellIndentation && /^\s+-\s+/.test(line)) {
-            currentColIndex++;
-            const cellContent = line.replace(/^\s+-\s+/, '').trim();
-            currentRow[`col${currentColIndex}`] = cellContent;
-        }
-        // Проверяем продолжение текущей ячейки (включая вложенные списки)
-        else if (lineIndentation > cellIndentation) {
-            const content = line.substring(cellIndentation).trim();
-            if (currentRow && currentRow[`col${currentColIndex}`]) {
-                currentRow[`col${currentColIndex}`] += '\n' + content;
+            const cellContent = line.slice(4);
+            currentRow[`col${currentColIndex}`] = cellContent.trimEnd();
+        } else if (line.startsWith('  - ')) {
+            // Новая ячейка в текущей строке
+            if (currentRow === null) {
+                throw new Error("New cell encountered without an active row.");
             }
-        }
-        // Игнорируем остальные линии или обрабатываем по необходимости
-        else {
-            // Можно добавить обработку неожиданных линий или игнорировать их
+            currentColIndex++;
+            const cellContent = line.slice(4);
+            currentRow[`col${currentColIndex}`] = cellContent.trimEnd();
+        } else if (line.startsWith('    ')) {
+            // Продолжение текущей ячейки
+            if (currentRow === null || currentColIndex === 0) {
+                throw new Error("Continuation encountered without an active cell.");
+            }
+            const additionalContent = line.slice(4);
+            currentRow[`col${currentColIndex}`] += '\n' + additionalContent.trimEnd();
+        } else {
+            // Неожиданная ситуация
+            throw new Error(`Unexpected line format: ${line}`);
         }
     }
 
-    // Добавляем последнюю строку, если она есть
-    if (currentRow) {
+    // Добавляем последнюю строку, если она существует
+    if (currentRow !== null) {
         rows.push(currentRow);
     }
 
@@ -183,10 +173,11 @@ function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, ta
         <style>
             body { font-family: sans-serif; }
             #table { margin-top: 20px; }
-            #saveButton { margin-top: 10px; }
+            #saveButton { margin: 10px; }
         </style>
     </head>
     <body>
+        <button id="saveButton">Сохранить</button>
         <div id="table-data" style="display: none;">${JSON.stringify(tableData)}</div>
         <div id="table"></div>
         <script nonce="${nonce}" src="${scriptUri}"></script>
@@ -202,11 +193,9 @@ function updateTableInDocument(editor: vscode.TextEditor, tableData: any[]) {
     tableData.forEach(row => {
         newTableText += '* - ' + Object.values(row)
             .map(element => String(element ?? "").split('\n').join('\n    '))
-            .join('\n  - ') + '\n\n';
+            .join('\n\n  - ') + '\n\n';
     });
 
-    // Normalize line endings to CRLF if needed
-    newTableText = newTableText.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
     newTableText = ":::{list-table}\n\n" + newTableText + ":::";
 
     // Get the document text
@@ -240,18 +229,16 @@ function updateTableInDocument(editor: vscode.TextEditor, tableData: any[]) {
 
     // Apply the edit
     vscode.workspace.applyEdit(edit).then(success => {
-        if (success) {
-            // Set the new cursor position to be right after `::{list-table}`
-            const newCursorPos = editor.document.positionAt(startTablePosition + '::{list-table}\n'.length);
+
+            // Set the new cursor position to be right after `:::{list-table}`
+            const newCursorPos = editor.document.positionAt(startTablePosition + ':::{list-table}\n'.length);
             
             // Update the selection to the new cursor position
             editor.selection = new vscode.Selection(newCursorPos, newCursorPos);
             
             // Reveal the new cursor position in the editor
             editor.revealRange(new vscode.Range(newCursorPos, newCursorPos), vscode.TextEditorRevealType.InCenter);
-        } else {
-            vscode.window.showErrorMessage('Failed to update the table.');
-        }
+
     });
 }
 

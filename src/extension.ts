@@ -7,11 +7,11 @@ export function activate(context: vscode.ExtensionContext) {
 
             if (editor) {
                 // Шаблон таблицы в формате list-table
-                const tableTemplate = `:::{list-table}\n` +
-                    `* - \n` +
-                    `  - \n` +
-                    `* - \n` +
-                    `  - \n` +
+                const tableTemplate = `:::{list-table}\n\n` +
+                    `* - \n\n` +
+                    `  - \n\n` +
+                    `* - \n\n` +
+                    `  - \n\n` +
                     `:::\n`;
 
                 // Вставляем таблицу в текущую позицию курсора
@@ -109,9 +109,23 @@ function parseListTable(tableText: string): any[] {
     const lines = tableText.split('\n');
     let currentRow: any = null;
     let currentColIndex = 1;
+    let rowIndentation = 0;
+    let cellIndentation = 0;
+
+    function getIndentationLevel(line: string): number {
+        const match = line.match(/^(\s*)/);
+        return match ? match[1].length : 0;
+    }
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
+
+        // Пропускаем пустые строки
+        if (line.trim() === '') {
+            continue;
+        }
+
+        const lineIndentation = getIndentationLevel(line);
 
         // Проверяем начало новой строки таблицы
         if (/^\*\s+-\s+/.test(line)) {
@@ -121,21 +135,27 @@ function parseListTable(tableText: string): any[] {
             }
             currentRow = {};
             currentColIndex = 1;
+            rowIndentation = lineIndentation;
+            cellIndentation = rowIndentation + 2; // Предполагаем, что ячейка начинается с '  - '
             const cellContent = line.replace(/^\*\s+-\s+/, '').trim();
             currentRow[`col${currentColIndex}`] = cellContent;
         }
         // Проверяем начало новой ячейки в той же строке
-        else if (/^\s+-\s+/.test(line)) {
+        else if (lineIndentation === cellIndentation && /^\s+-\s+/.test(line)) {
             currentColIndex++;
             const cellContent = line.replace(/^\s+-\s+/, '').trim();
             currentRow[`col${currentColIndex}`] = cellContent;
         }
-        // Проверяем продолжение ячейки (многострочный текст)
-        else if (/^\s{4,}/.test(line)) {
-            const continuationContent = line.trim();
+        // Проверяем продолжение текущей ячейки (включая вложенные списки)
+        else if (lineIndentation > cellIndentation) {
+            const content = line.substring(cellIndentation).trim();
             if (currentRow && currentRow[`col${currentColIndex}`]) {
-                currentRow[`col${currentColIndex}`] += '\n' + continuationContent;
+                currentRow[`col${currentColIndex}`] += '\n' + content;
             }
+        }
+        // Игнорируем остальные линии или обрабатываем по необходимости
+        else {
+            // Можно добавить обработку неожиданных линий или игнорировать их
         }
     }
 
@@ -146,6 +166,7 @@ function parseListTable(tableText: string): any[] {
 
     return rows;
 }
+
 
 function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, tableData: any[]) {
     const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'tableEditor.js'));
@@ -181,12 +202,12 @@ function updateTableInDocument(editor: vscode.TextEditor, tableData: any[]) {
     tableData.forEach(row => {
         newTableText += '* - ' + Object.values(row)
             .map(element => String(element ?? "").split('\n').join('\n    '))
-            .join('\n  - ') + '\n';
+            .join('\n  - ') + '\n\n';
     });
 
     // Normalize line endings to CRLF if needed
     newTableText = newTableText.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
-    newTableText = ":::{list-table}\n" + newTableText + ":::";
+    newTableText = ":::{list-table}\n\n" + newTableText + ":::";
 
     // Get the document text
     const documentText = editor.document.getText();

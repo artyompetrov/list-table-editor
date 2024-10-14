@@ -45,15 +45,10 @@ function sanitizeHTML(value:string){
 
 
     const customTextAreaFormatter: Formatter = function(cell: CellComponent, formatterParams, onRendered){
-        cell.getElement().style.whiteSpace = "pre-wrap";
 
-        onRendered(function(){
-            cell.getElement().style.height = "0px";
-        });
-
-        return emptyToSpace(sanitizeHTML(cell.getValue())).trim()
+        return emptyToSpace(sanitizeHTML(cell.getValue()))
                 .replace(/ /g, '<span class="invisible-symbol">·</span>')
-                .replace(/\n/g, '<span class="invisible-symbol">↵</span>\n');
+                .replace(/\n/g, '<span class="invisible-symbol">↵</span><br>');
 
         
     }
@@ -73,7 +68,7 @@ function sanitizeHTML(value:string){
             maxWidth:700,
             editor: "textarea",
             headerSort: false,
-            formatter: "textarea" /* customTextAreaFormatter*/,
+            formatter: /*"textarea" */ customTextAreaFormatter,
             headerContextMenu: 
             [
                 {

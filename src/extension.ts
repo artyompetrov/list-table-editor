@@ -8,9 +8,9 @@ export function activate(context: vscode.ExtensionContext) {
             if (editor) {
                 // Шаблон таблицы в формате list-table
                 const tableTemplate = `:::{list-table}\n\n` +
-                    `* - \n\n` +
+                    `* - \n` +
                     `  - \n\n` +
-                    `* - \n\n` +
+                    `* - \n` +
                     `  - \n\n` +
                     `:::\n`;
 
@@ -193,7 +193,7 @@ function updateTableInDocument(editor: vscode.TextEditor, tableData: any[]) {
     tableData.forEach(row => {
         newTableText += '* - ' + Object.values(row)
             .map(element => String(element ?? "").split('\n').join('\n    '))
-            .join('\n\n  - ') + '\n\n';
+            .join('\n  - ') + '\n\n';
     });
 
     newTableText = ":::{list-table}\n\n" + newTableText + ":::";
@@ -230,6 +230,7 @@ function updateTableInDocument(editor: vscode.TextEditor, tableData: any[]) {
     // Apply the edit
     vscode.workspace.applyEdit(edit).then(success => {
 
+        if (success) {
             // Set the new cursor position to be right after `:::{list-table}`
             const newCursorPos = editor.document.positionAt(startTablePosition + ':::{list-table}\n'.length);
             
@@ -238,7 +239,10 @@ function updateTableInDocument(editor: vscode.TextEditor, tableData: any[]) {
             
             // Reveal the new cursor position in the editor
             editor.revealRange(new vscode.Range(newCursorPos, newCursorPos), vscode.TextEditorRevealType.InCenter);
-
+        }
+        else {
+            vscode.window.showErrorMessage('Error while saving');
+        }
     });
 }
 

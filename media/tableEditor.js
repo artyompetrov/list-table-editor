@@ -30372,6 +30372,7 @@ function sanitizeHTML(value) {
             .replace(/\n/g, '<span class="invisible-symbol">↵</span>\n');
     };
     const tableData = JSON.parse(tableDataElement.textContent || '[]');
+    let i = 0;
     // Создаем таблицу с помощью Tabulator
     const table = new tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.TabulatorFull("#table", {
         data: tableData,
@@ -30381,7 +30382,7 @@ function sanitizeHTML(value) {
             headerSort: false, resizable: false, minWidth: 30, rowHandle: true, formatter: "rownum"
         },
         columnDefaults: {
-            maxWidth: 600,
+            maxWidth: 700,
             editor: "textarea",
             headerSort: false,
             formatter: "textarea" /* customTextAreaFormatter*/,
@@ -30398,13 +30399,15 @@ function sanitizeHTML(value) {
                 {
                     label: '<span style="color: blue;">add &larr;</span>',
                     action: function (e, column) {
-                        table.addColumn({ title: "new" }, true, column);
+                        i++;
+                        table.addColumn({ title: "new" + i, field: "new" + i }, true, column);
                     }
                 },
                 {
                     label: '<span style="color: blue;">add &rarr;</span>',
                     action: function (e, column) {
-                        table.addColumn({ title: "new" }, false, column);
+                        i++;
+                        table.addColumn({ title: "new" + i, field: "new" + i }, false, column);
                     }
                 }
             ]
@@ -30443,6 +30446,7 @@ function sanitizeHTML(value) {
     });
     const saveButton = document.getElementById('saveButton');
     if (saveButton) {
+        console.log('Save button not found');
         saveButton.addEventListener('click', () => {
             const data = table.getData();
             let columns = table.getColumnDefinitions(); // Получаем все определения колонок
@@ -30452,14 +30456,13 @@ function sanitizeHTML(value) {
                 columns.forEach(col => {
                     if (i != 0) {
                         let field = "col" + i;
-                        rowData[field] = row.hasOwnProperty(col.field) ? (row[field] ?? "") : ""; // Если ячейка пустая, вставляем пустую строку
+                        rowData[field] = row.hasOwnProperty(col.field) ? (row[col.field] ?? "") : ""; // Если ячейка пустая, вставляем пустую строку
                     }
                     i++;
                 });
                 return rowData;
             });
             vscode.postMessage({ command: 'updateTable', data: tableData });
-            vscode.postMessage({ command: 'updateTable', data: data });
         });
     }
     else {

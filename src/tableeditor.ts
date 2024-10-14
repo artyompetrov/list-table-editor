@@ -73,7 +73,7 @@ function sanitizeHTML(value:string){
             maxWidth:600,
             editor: "textarea",
             headerSort: false,
-            formatter: "textarea" /* customTextAreaFormatter*/,
+            formatter:/* "textarea" */ customTextAreaFormatter,
             headerContextMenu: 
             [
                 {
@@ -142,7 +142,20 @@ function sanitizeHTML(value:string){
 
 
     table.on("dataChanged", function(data){
-        const tableData = table.getData();
+        let columns = table.getColumnDefinitions(); // Получаем все определения колонок
+        let tableData = data.map(row => {
+            let rowData : {[key:string]: string} = {};
+            let i = 0;
+            columns.forEach(col => {
+                if (i != 0) {
+                    let field = "col" + i;
+                    rowData[field] = row.hasOwnProperty(col.field) ? (row[field] ?? "") : ""; // Если ячейка пустая, вставляем пустую строку
+                }
+                i++;
+            });
+            return rowData;
+        });
+        
         vscode.postMessage({ command: 'updateTable', data: tableData });
     });
 

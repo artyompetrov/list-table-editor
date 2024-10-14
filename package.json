@@ -17,11 +17,20 @@
     "commands": [
       {
         "command": "extension.openTableEditor",
-        "title": "Open Table Editor"
+        "title": "Open List Table Editor"
+      },
+      {
+        "command": "extension.insertListTable",
+        "title": "Insert List Table"
       }
     ],
     "menus": {
       "editor/context": [
+        {
+          "command": "extension.insertListTable",
+          "when": "editorLangId == markdown",
+          "group": "navigation"
+        },
         {
           "command": "extension.openTableEditor",
           "when": "editorLangId == markdown",

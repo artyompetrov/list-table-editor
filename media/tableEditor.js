@@ -30384,7 +30384,7 @@ function sanitizeHTML(value) {
             maxWidth: 600,
             editor: "textarea",
             headerSort: false,
-            formatter: "textarea" /* customTextAreaFormatter*/,
+            formatter: /* "textarea" */ customTextAreaFormatter,
             headerContextMenu: [
                 {
                     label: '<span style="color: red;">DELETE</span>',
@@ -30442,7 +30442,19 @@ function sanitizeHTML(value) {
         ],
     });
     table.on("dataChanged", function (data) {
-        const tableData = table.getData();
+        let columns = table.getColumnDefinitions(); // Получаем все определения колонок
+        let tableData = data.map(row => {
+            let rowData = {};
+            let i = 0;
+            columns.forEach(col => {
+                if (i != 0) {
+                    let field = "col" + i;
+                    rowData[field] = row.hasOwnProperty(col.field) ? (row[field] ?? "") : ""; // Если ячейка пустая, вставляем пустую строку
+                }
+                i++;
+            });
+            return rowData;
+        });
         vscode.postMessage({ command: 'updateTable', data: tableData });
     });
 })();

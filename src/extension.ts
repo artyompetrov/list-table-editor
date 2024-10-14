@@ -2,6 +2,37 @@ import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
+        vscode.commands.registerCommand('extension.insertListTable', () => {
+            const editor = vscode.window.activeTextEditor;
+
+            if (editor) {
+                // Шаблон таблицы в формате list-table
+                const tableTemplate = `:::{list-table}\n` +
+                    `* - \n` +
+                    `  - \n` +
+                    `* - \n` +
+                    `  - \n` +
+                    `:::\n`;
+
+                // Вставляем таблицу в текущую позицию курсора
+                editor.edit(editBuilder => {
+                    editBuilder.insert(editor.selection.active, tableTemplate);
+                }).then(success => {
+                    if (success) {
+                        vscode.window.showInformationMessage('Table inserted successfully!');
+                    } else {
+                        vscode.window.showErrorMessage('Failed to insert the table.');
+                    }
+                });
+            } else {
+                vscode.window.showErrorMessage('No active editor found.');
+            }
+        })
+    );
+
+
+
+    context.subscriptions.push(
         vscode.commands.registerCommand('extension.openTableEditor', () => {
             const editor = vscode.window.activeTextEditor;
             if (editor) {
@@ -43,7 +74,7 @@ export function activate(context: vscode.ExtensionContext) {
                 // Create and show the webview panel for table editing
                 const panel = vscode.window.createWebviewPanel(
                     'tableEditor',
-                    'Table Editor',
+                    'List Table Editor',
                     vscode.ViewColumn.Beside,
                     {
                         enableScripts: true,
@@ -149,7 +180,7 @@ function updateTableInDocument(editor: vscode.TextEditor, tableData: any[]) {
 
     tableData.forEach(row => {
         newTableText += '* - ' + Object.values(row)
-            .map(element => String(element).split('\n').join('\n    '))
+            .map(element => String(element ?? "").split('\n').join('\n    '))
             .join('\n  - ') + '\n';
     });
 

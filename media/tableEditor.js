@@ -30232,16 +30232,16 @@ ___CSS_LOADER_EXPORT___.push([module.id, `.invisible-symbol {
 }
 
 html, body {
-    height: 95%;
+    height: 100%;
     margin: 0;
     padding: 0;
 }
 
 #table {
-    height: 100%;
+    height: 95%;
     width: 100%;
 }
-`, "",{"version":3,"sources":["webpack://./src/tabulator.css"],"names":[],"mappings":"AAAA;IACI,WAAW;EACb;;;AAGF;IACI,qBAAqB;IACrB,qBAAqB;IACrB,YAAY;IACZ,oBAAoB;IACpB,kBAAkB;AACtB;;AAEA;;IAEI,oBAAoB;IACpB,kBAAkB;IAClB,oBAAoB;IACpB,UAAU;IACV,YAAY;IACZ,6BAA6B;IAC7B,gBAAgB;IAChB,aAAa;AACjB;;AAEA;IACI,YAAY;AAChB;;AAEA;IACI,WAAW;IACX,SAAS;IACT,UAAU;AACd;;AAEA;IACI,YAAY;IACZ,WAAW;AACf","sourceRoot":""}]);
+`, "",{"version":3,"sources":["webpack://./src/tabulator.css"],"names":[],"mappings":"AAAA;IACI,WAAW;EACb;;;AAGF;IACI,qBAAqB;IACrB,qBAAqB;IACrB,YAAY;IACZ,oBAAoB;IACpB,kBAAkB;AACtB;;AAEA;;IAEI,oBAAoB;IACpB,kBAAkB;IAClB,oBAAoB;IACpB,UAAU;IACV,YAAY;IACZ,6BAA6B;IAC7B,gBAAgB;IAChB,aAAa;AACjB;;AAEA;IACI,YAAY;AAChB;;AAEA;IACI,YAAY;IACZ,SAAS;IACT,UAAU;AACd;;AAEA;IACI,WAAW;IACX,WAAW;AACf","sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -30330,7 +30330,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.TabulatorFull.registerModule([tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.EditModule, tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.MoveRowsModule, tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.MoveColumnsModule]);
+tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.TabulatorFull.registerModule([tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.EditModule, tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.MoveRowsModule, tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.MoveColumnsModule, tabulator_tables__WEBPACK_IMPORTED_MODULE_2__.InteractionModule]);
 function emptyToSpace(value) {
     return value === null || typeof value === "undefined" || value === "" ? "&nbsp;" : value;
 }
@@ -30382,7 +30382,7 @@ function sanitizeHTML(value) {
             maxWidth: 600,
             editor: "textarea",
             headerSort: false,
-            formatter: /*"textarea" */ customTextAreaFormatter,
+            formatter: "textarea" /* customTextAreaFormatter*/,
             headerContextMenu: [
                 {
                     label: '<span style="color: red;">DELETE</span>',
@@ -30437,20 +30437,12 @@ function sanitizeHTML(value) {
                     table.addRow({}, false, row);
                 }
             }
-        ]
+        ],
     });
-    const saveButton = document.getElementById('saveButton');
-    if (saveButton) {
-        saveButton.addEventListener('click', () => {
-            table.addColumn({ title: "Gender", field: "gender" }, false);
-            return;
-            const data = table.getData();
-            vscode.postMessage({ command: 'updateTable', data: data });
-        });
-    }
-    else {
-        console.error('Save button not found');
-    }
+    table.on("dataChanged", function (data) {
+        const tableData = table.getData();
+        vscode.postMessage({ command: 'updateTable', data: tableData });
+    });
 })();
 
 })();

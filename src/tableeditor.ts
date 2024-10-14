@@ -1,4 +1,4 @@
-import { TabulatorFull, ColumnDefinition, EditModule, MoveRowsModule, MoveColumnsModule, Formatter, CellComponent,   } from 'tabulator-tables';
+import { TabulatorFull, EditModule, MoveRowsModule, MoveColumnsModule, Formatter, CellComponent, InteractionModule  } from 'tabulator-tables';
 import 'tabulator-tables/dist/css/tabulator.min.css';
 import './tabulator.css';
 
@@ -8,7 +8,7 @@ interface vscode {
 
 declare const vscode: vscode;
 
-TabulatorFull.registerModule([EditModule, MoveRowsModule, MoveColumnsModule]);
+TabulatorFull.registerModule([EditModule, MoveRowsModule, MoveColumnsModule, InteractionModule]);
 
 function emptyToSpace(value:string){
     return value === null || typeof value === "undefined" || value === "" ? "&nbsp;" : value;
@@ -63,6 +63,7 @@ function sanitizeHTML(value:string){
 
     // Создаем таблицу с помощью Tabulator
     const table = new TabulatorFull("#table", {
+        
         data: tableData,
         resizableColumnFit:true,
         resizableRows:true,
@@ -73,7 +74,7 @@ function sanitizeHTML(value:string){
             maxWidth:600,
             editor: "textarea",
             headerSort: false,
-            formatter: /*"textarea" */ customTextAreaFormatter,
+            formatter: "textarea" /* customTextAreaFormatter*/,
             headerContextMenu: 
             [
                 {
@@ -110,8 +111,7 @@ function sanitizeHTML(value:string){
         autoResize: true,
         autoColumns:true, 
         history:true,  
-        headerVisible: true,
-        
+        headerVisible: true,        
         rowContextMenu: [
             {
                 label:'<span style="color: red;">DELETE</span>',
@@ -137,18 +137,14 @@ function sanitizeHTML(value:string){
                 }
             }
 
-        ]
+        ],
+        
     });
 
-    const saveButton = document.getElementById('saveButton');
-    if (saveButton) {
-        saveButton.addEventListener('click', () => {
-            table.addColumn({title: "Gender", field: "gender"}, false);
-            return;
-            const data = table.getData();
-            vscode.postMessage({ command: 'updateTable', data: data });
-        });
-    } else {
-        console.error('Save button not found');
-    }
+
+    table.on("dataChanged", function(data){
+        const tableData = table.getData();
+        vscode.postMessage({ command: 'updateTable', data: tableData });
+    });
+
 })();

@@ -35,8 +35,10 @@ export function activate(context: vscode.ExtensionContext) {
 
                     panel.webview.onDidReceiveMessage(
                         message => {
+                            alert("test");
                             switch (message.command) {
                                 case 'updateTable':
+                                    alert("test");
                                     updateTableInDocument(document, message.data);
                                     break;
                             }
@@ -99,7 +101,6 @@ function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, ta
     <body>
         <div id="table-data" style="display: none;">${JSON.stringify(tableData)}</div>
         <div id="table"></div>
-        <button id="saveButton">Сохранить изменения</button>
         <script nonce="${nonce}" src="${scriptUri}"></script>
     </body>
     </html>

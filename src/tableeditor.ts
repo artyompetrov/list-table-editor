@@ -56,8 +56,8 @@ function sanitizeHTML(value:string){
     const customTextAreaFormatter: Formatter = function(cell: CellComponent, formatterParams, onRendered){
 
         return emptyToSpace(sanitizeHTML(cell.getValue()))
-                .replace(/ /g, '<span class="invisible-symbol">·</span>')
-                .replace(/\n/g, '<span class="invisible-symbol">↵</span><br>');
+                .replace(/ /g, '·')
+                .replace(/\n/g, '↵<br>');
 
         
     }
@@ -87,81 +87,118 @@ function sanitizeHTML(value:string){
         cancel: ValueVoidCallback,
         editorParams: {}
       ) {
-        // Текущее реальное значение ячейки
+        // Исходное (реальное) значение ячейки
         const originalValue = (cell.getValue() || "").toString();
       
         // Создаём <textarea>
         const input = document.createElement("textarea");
-      
-        // Базовые стили, чтобы вписаться в ячейку (при необходимости расширяйте)
         input.style.width = "100%";
         input.style.height = "100%";
+        input.style.resize = "none";
         input.style.padding = "3px";
-        input.style.resize = "none"; // чтобы нельзя было вручную тянуть <textarea> за угол
+        input.style.boxSizing = "border-box";
       
-        // Превращаем пробелы/переносы в "·" / "↵", чтобы при показе уже визуализировать
+        // Показываем «·» вместо пробелов и «↵\n» вместо \n
         input.value = showInvisibleChars(originalValue);
       
-        // Когда редактор "отрисован", ставим фокус
+        // Фокусируем, когда элемент готов
         onRendered(() => {
           input.focus();
         });
       
-        // При выходе из фокуса (blur) — сохраняем
-        input.addEventListener("blur", () => {
-          finishEditing();
-        });
+        // При выходе из фокуса — завершаем (сохраняем)
+        input.addEventListener("blur", finishEditing);
       
-        // По Enter без Shift — сохраняем
+      
+        // Специальный флаг для Shift+Enter
+        let lastWasEnter = false;
+      
+        // ---- Обработка нажатий клавиш, преобразование «на лету» ----
         input.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            finishEditing();
-          }
-        });
+          // Сбросим флаг перед каждой клавишей
+          lastWasEnter = false;
       
-        // По Esc — отменяем
-        input.addEventListener("keydown", (e) => {
-          if (e.key === "Escape") {
-            cancel({});
+          // Если это Enter
+          if (e.key === "Enter") {
+            lastWasEnter = true;
           }
-        });
       
-        // ———————————————————————————————————————————————————
-        // "На лету" меняем символы при каждом нажатии клавиши
-        // ———————————————————————————————————————————————————
-        input.addEventListener("keydown", () => {
-          // Ждём, пока текст вставится (так как keydown ещё до изменения .value)
           setTimeout(() => {
-            // 1) Запоминаем позицию курсора
+            // 1) Текущая позиция курсора
             let pos = input.selectionStart;
       
-            // 2) Получаем «видимый» в <textarea> текст, превращаем в обычный
-            let currentInvisible = input.value;
-            let realValue = hideInvisibleChars(currentInvisible);
+            // 2) Превращаем «визуалку» (·, ↵) обратно в реальный текст
+            const currentInvisible = input.value;
+            const realValue = hideInvisibleChars(currentInvisible);
       
-            // 3) Снова отображаем как "·"/"↵"
+            // 3) Снова делаем showInvisibleChars
             let replaced = showInvisibleChars(realValue);
       
-            // 4) Устанавливаем .value
-            input.value = replaced;
-      
-            // 5) Восстанавливаем курсор
-            //  - Если pos вышел за пределы строки, ставим в конец
-            if (pos > replaced.length) {
-              pos = replaced.length;
+            // 4) Если это **НЕ** Shift+Enter, и мы оказались "за ↵", — сдвигаем назад
+            //    Но если Shift+Enter — наоборот, хотим перейти на новую строку
+            if (!lastWasEnter && pos > 0 && replaced[pos - 1] === "↵") {
+              // «запрещаем» курсор быть за ↵
+              pos--;
+            } else if (lastWasEnter) {
+              // При Shift+Enter добавили реальный \n в строку, который
+              // превратился в "↵\n" = 2 символа
+              //
+              // Чтобы курсор оказался "после" этого \n, двигаемся ещё на 2 символа,
+              // т.е. начинаем следующую строку
+              pos += 2;
             }
       
-            // Устанавливаем selectionRange
+            // 5) Запишем новое значение в <textarea>
+            input.value = replaced;
+      
+            // 6) Проверим выход за границы
+            if (pos < 0) pos = 0;
+            if (pos > replaced.length) pos = replaced.length;
+      
+            // 7) Возвращаем курсор
             input.selectionStart = pos;
             input.selectionEnd = pos;
           }, 0);
         });
       
-        // Когда пользователь «завершает» редактирование
+        // ---- Если пользователь кликает мышью или двигает курсор стрелками ----
+        // тоже чиним «курсор за ↵», но **не** трогаем, если последнее было Shift+Enter
+        // (иначе можем потерять переход на новую строку)
+        input.addEventListener("mouseup", () => {
+          setTimeout(() => {
+            if (!lastWasEnter) {
+              fixCursorIfBehindArrow();
+            }
+          }, 0);
+        });
+        input.addEventListener("keyup", (e) => {
+          setTimeout(() => {
+            // Если пользователь не нажал (Shift+Enter), можно «чинить»
+            if (!(e.key === "Enter" && e.shiftKey)) {
+              fixCursorIfBehindArrow();
+            }
+          }, 0);
+        });
+      
+        function fixCursorIfBehindArrow() {
+          // Если выделение есть (selectionStart != selectionEnd), не трогаем
+          if (input.selectionStart !== input.selectionEnd) return;
+      
+          let pos = input.selectionStart;
+          const replaced = input.value;
+      
+          if (pos > 0 && replaced[pos - 1] === "↵") {
+            pos--;
+            if (pos < 0) pos = 0;
+            input.selectionStart = pos;
+            input.selectionEnd = pos;
+          }
+        }
+      
+        // ---- Завершение редактирования ----
         function finishEditing() {
-          // При сохранении превращаем все "·"/"↵" обратно в реальные пробелы и \n
-          let finalValue = hideInvisibleChars(input.value);
+          // Убираем «·» и «↵» => возвращаем обычные пробелы и переносы
+          const finalValue = hideInvisibleChars(input.value);
           success(finalValue);
         }
       

@@ -30202,12 +30202,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_1___default()((_node_modules_css_loader_dist_runtime_sourceMaps_js__WEBPACK_IMPORTED_MODULE_0___default()));
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, `.invisible-symbol {
-    color: gray;
-  }
-
-
-.tabulator-cell {
+___CSS_LOADER_EXPORT___.push([module.id, `.tabulator-cell {
     white-space: pre-wrap;
     word-wrap: break-word;
     height: auto; 
@@ -30241,7 +30236,7 @@ html, body {
     height: 95%;
     width: 100%;
 }
-`, "",{"version":3,"sources":["webpack://./src/tabulator.css"],"names":[],"mappings":"AAAA;IACI,WAAW;EACb;;;AAGF;IACI,qBAAqB;IACrB,qBAAqB;IACrB,YAAY;IACZ,oBAAoB;IACpB,kBAAkB;AACtB;;AAEA;;IAEI,oBAAoB;IACpB,kBAAkB;IAClB,oBAAoB;IACpB,UAAU;IACV,YAAY;IACZ,6BAA6B;IAC7B,gBAAgB;IAChB,aAAa;AACjB;;AAEA;IACI,YAAY;AAChB;;AAEA;IACI,YAAY;IACZ,SAAS;IACT,UAAU;AACd;;AAEA;IACI,WAAW;IACX,WAAW;AACf","sourceRoot":""}]);
+`, "",{"version":3,"sources":["webpack://./src/tabulator.css"],"names":[],"mappings":"AAAA;IACI,qBAAqB;IACrB,qBAAqB;IACrB,YAAY;IACZ,oBAAoB;IACpB,kBAAkB;AACtB;;AAEA;;IAEI,oBAAoB;IACpB,kBAAkB;IAClB,oBAAoB;IACpB,UAAU;IACV,YAAY;IACZ,6BAA6B;IAC7B,gBAAgB;IAChB,aAAa;AACjB;;AAEA;IACI,YAAY;AAChB;;AAEA;IACI,YAAY;IACZ,SAAS;IACT,UAAU;AACd;;AAEA;IACI,WAAW;IACX,WAAW;AACf","sourceRoot":""}]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -30370,8 +30365,8 @@ function sanitizeHTML(value) {
     const paramLines = JSON.parse(paramLinesElement.textContent || '[]');
     const customTextAreaFormatter = function (cell, formatterParams, onRendered) {
         return emptyToSpace(sanitizeHTML(cell.getValue()))
-            .replace(/ /g, '<span class="invisible-symbol">·</span>')
-            .replace(/\n/g, '<span class="invisible-symbol">↵</span><br>');
+            .replace(/ /g, '·')
+            .replace(/\n/g, '↵<br>');
     };
     function showInvisibleChars(str) {
         // преобразуем пробелы и переводы строк
@@ -30389,67 +30384,103 @@ function sanitizeHTML(value) {
             .replace(/↵/g, "");
     }
     function customInvisibleEditor(cell, onRendered, success, cancel, editorParams) {
-        // Текущее реальное значение ячейки
+        // Исходное (реальное) значение ячейки
         const originalValue = (cell.getValue() || "").toString();
         // Создаём <textarea>
         const input = document.createElement("textarea");
-        // Базовые стили, чтобы вписаться в ячейку (при необходимости расширяйте)
         input.style.width = "100%";
         input.style.height = "100%";
+        input.style.resize = "none";
         input.style.padding = "3px";
-        input.style.resize = "none"; // чтобы нельзя было вручную тянуть <textarea> за угол
-        // Превращаем пробелы/переносы в "·" / "↵", чтобы при показе уже визуализировать
+        input.style.boxSizing = "border-box";
+        // Показываем «·» вместо пробелов и «↵\n» вместо \n
         input.value = showInvisibleChars(originalValue);
-        // Когда редактор "отрисован", ставим фокус
+        // Фокусируем, когда элемент готов
         onRendered(() => {
             input.focus();
         });
-        // При выходе из фокуса (blur) — сохраняем
-        input.addEventListener("blur", () => {
-            finishEditing();
-        });
-        // По Enter без Shift — сохраняем
+        // При выходе из фокуса — завершаем (сохраняем)
+        input.addEventListener("blur", finishEditing);
+        // Специальный флаг для Shift+Enter
+        let lastWasEnter = false;
+        // ---- Обработка нажатий клавиш, преобразование «на лету» ----
         input.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                finishEditing();
+            // Сбросим флаг перед каждой клавишей
+            lastWasEnter = false;
+            // Если это Enter
+            if (e.key === "Enter") {
+                lastWasEnter = true;
             }
-        });
-        // По Esc — отменяем
-        input.addEventListener("keydown", (e) => {
-            if (e.key === "Escape") {
-                cancel({});
-            }
-        });
-        // ———————————————————————————————————————————————————
-        // "На лету" меняем символы при каждом нажатии клавиши
-        // ———————————————————————————————————————————————————
-        input.addEventListener("keydown", () => {
-            // Ждём, пока текст вставится (так как keydown ещё до изменения .value)
             setTimeout(() => {
-                // 1) Запоминаем позицию курсора
+                // 1) Текущая позиция курсора
                 let pos = input.selectionStart;
-                // 2) Получаем «видимый» в <textarea> текст, превращаем в обычный
-                let currentInvisible = input.value;
-                let realValue = hideInvisibleChars(currentInvisible);
-                // 3) Снова отображаем как "·"/"↵"
+                // 2) Превращаем «визуалку» (·, ↵) обратно в реальный текст
+                const currentInvisible = input.value;
+                const realValue = hideInvisibleChars(currentInvisible);
+                // 3) Снова делаем showInvisibleChars
                 let replaced = showInvisibleChars(realValue);
-                // 4) Устанавливаем .value
-                input.value = replaced;
-                // 5) Восстанавливаем курсор
-                //  - Если pos вышел за пределы строки, ставим в конец
-                if (pos > replaced.length) {
-                    pos = replaced.length;
+                // 4) Если это **НЕ** Shift+Enter, и мы оказались "за ↵", — сдвигаем назад
+                //    Но если Shift+Enter — наоборот, хотим перейти на новую строку
+                if (!lastWasEnter && pos > 0 && replaced[pos - 1] === "↵") {
+                    // «запрещаем» курсор быть за ↵
+                    pos--;
                 }
-                // Устанавливаем selectionRange
+                else if (lastWasEnter) {
+                    // При Shift+Enter добавили реальный \n в строку, который
+                    // превратился в "↵\n" = 2 символа
+                    //
+                    // Чтобы курсор оказался "после" этого \n, двигаемся ещё на 2 символа,
+                    // т.е. начинаем следующую строку
+                    pos += 2;
+                }
+                // 5) Запишем новое значение в <textarea>
+                input.value = replaced;
+                // 6) Проверим выход за границы
+                if (pos < 0)
+                    pos = 0;
+                if (pos > replaced.length)
+                    pos = replaced.length;
+                // 7) Возвращаем курсор
                 input.selectionStart = pos;
                 input.selectionEnd = pos;
             }, 0);
         });
-        // Когда пользователь «завершает» редактирование
+        // ---- Если пользователь кликает мышью или двигает курсор стрелками ----
+        // тоже чиним «курсор за ↵», но **не** трогаем, если последнее было Shift+Enter
+        // (иначе можем потерять переход на новую строку)
+        input.addEventListener("mouseup", () => {
+            setTimeout(() => {
+                if (!lastWasEnter) {
+                    fixCursorIfBehindArrow();
+                }
+            }, 0);
+        });
+        input.addEventListener("keyup", (e) => {
+            setTimeout(() => {
+                // Если пользователь не нажал (Shift+Enter), можно «чинить»
+                if (!(e.key === "Enter" && e.shiftKey)) {
+                    fixCursorIfBehindArrow();
+                }
+            }, 0);
+        });
+        function fixCursorIfBehindArrow() {
+            // Если выделение есть (selectionStart != selectionEnd), не трогаем
+            if (input.selectionStart !== input.selectionEnd)
+                return;
+            let pos = input.selectionStart;
+            const replaced = input.value;
+            if (pos > 0 && replaced[pos - 1] === "↵") {
+                pos--;
+                if (pos < 0)
+                    pos = 0;
+                input.selectionStart = pos;
+                input.selectionEnd = pos;
+            }
+        }
+        // ---- Завершение редактирования ----
         function finishEditing() {
-            // При сохранении превращаем все "·"/"↵" обратно в реальные пробелы и \n
-            let finalValue = hideInvisibleChars(input.value);
+            // Убираем «·» и «↵» => возвращаем обычные пробелы и переносы
+            const finalValue = hideInvisibleChars(input.value);
             success(finalValue);
         }
         return input;

@@ -30384,7 +30384,7 @@ function sanitizeHTML(value) {
             headerSort: false, resizable: false, minWidth: 30, rowHandle: true, formatter: "rownum"
         },
         columnDefaults: {
-            maxWidth: 700,
+            maxWidth: 1000,
             editor: "textarea",
             headerSort: false,
             formatter: /*"textarea" */ customTextAreaFormatter,

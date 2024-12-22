@@ -34,71 +34,79 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('extension.openTableEditor', () => {
-            const editor = vscode.window.activeTextEditor;
-            if (editor) {
-                const document = editor.document;
-                // Get the document text
-                const documentText = editor.document.getText();
 
-                // Get the cursor position
-                const cursorPosition = editor.selection.active;
-                
-                // Find the start of the list-table by searching upwards
-                let startTablePosition = documentText.lastIndexOf(':::{list-table}', editor.document.offsetAt(cursorPosition));
-                if (startTablePosition === -1) {
-                    vscode.window.showErrorMessage('Start of the table (::: {list-table}) not found.');
-                    return;
-                }
-            
-                // Find the end of the list-table by searching downwards
-                let endTablePosition = documentText.indexOf(':::', editor.document.offsetAt(cursorPosition));
-                if (endTablePosition === -1) {
-                    vscode.window.showErrorMessage('End of the table (::: end) not found.');
-                    return;
-                }
+            try {
+                                const editor = vscode.window.activeTextEditor;
+                if (editor) {
+                    const document = editor.document;
+                    // Get the document text
+                    const documentText = editor.document.getText();
 
-                // Get the text between startTablePosition and endTablePosition
-                const startSelectionPos = editor.document.positionAt(startTablePosition);
-                const endSelectionPos = editor.document.positionAt(endTablePosition + 3); // Include ':::' in the selection
-                const selectedText = document.getText(new vscode.Range(startSelectionPos, endSelectionPos));
+                    // Get the cursor position
+                    const cursorPosition = editor.selection.active;
 
-                // Ensure the file is a Markdown file
-                if (document.languageId !== 'markdown') {
-                    vscode.window.showErrorMessage('This command can be run only for Markdown-files.');
-                    return;
-                }
-
-                // Parse the table content between the markers
-                const parsedTable = parseListTable(selectedText);
-
-                // Create and show the webview panel for table editing
-                const panel = vscode.window.createWebviewPanel(
-                    'tableEditor',
-                    'List Table Editor',
-                    vscode.ViewColumn.Beside,
-                    {
-                        enableScripts: true,
-                        localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')]
+                    // Find the start of the list-table by searching upwards
+                    let startTablePosition = documentText.lastIndexOf(':::{list-table}', editor.document.offsetAt(cursorPosition));
+                    if (startTablePosition === -1) {
+                        vscode.window.showErrorMessage('Start of the table (::: {list-table}) not found.');
+                        return;
                     }
-                );
 
-                panel.webview.html = getWebviewContent(panel.webview, context.extensionUri, parsedTable);
+                    // Find the end of the list-table by searching downwards
+                    let endTablePosition = documentText.indexOf(':::', editor.document.offsetAt(cursorPosition));
+                    if (endTablePosition === -1) {
+                        vscode.window.showErrorMessage('End of the table (::: end) not found.');
+                        return;
+                    }
 
-                // Handle messages from the webview
-                panel.webview.onDidReceiveMessage(
-                    message => {
-                        switch (message.command) {
-                            case 'updateTable':
-                                updateTableInDocument(editor, message.data);
-                                break;
+                    // Get the text between startTablePosition and endTablePosition
+                    const startSelectionPos = editor.document.positionAt(startTablePosition);
+                    const endSelectionPos = editor.document.positionAt(endTablePosition + 3); // Include ':::' in the selection
+                    const selectedText = document.getText(new vscode.Range(startSelectionPos, endSelectionPos));
+
+                    // Ensure the file is a Markdown file
+                    if (document.languageId !== 'markdown') {
+                        vscode.window.showErrorMessage('This command can be run only for Markdown-files.');
+                        return;
+                    }
+
+                    // Parse the table content between the markers
+                    const parsedTable = parseListTable(selectedText);
+
+                    // Create and show the webview panel for table editing
+                    const panel = vscode.window.createWebviewPanel(
+                        'tableEditor',
+                        'List Table Editor',
+                        vscode.ViewColumn.Beside,
+                        {
+                            enableScripts: true,
+                            localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')]
                         }
-                    },
-                    undefined,
-                    context.subscriptions
-                );
-            } else {
-                vscode.window.showErrorMessage('No active editor found.');
+                    );
+
+                    panel.webview.html = getWebviewContent(panel.webview, context.extensionUri, parsedTable);
+
+                    // Handle messages from the webview
+                    panel.webview.onDidReceiveMessage(
+                        message => {
+                            switch (message.command) {
+                                case 'updateTable':
+                                    updateTableInDocument(editor, message.data);
+                                    break;
+                            }
+                        },
+                        undefined,
+                        context.subscriptions
+                    );
+                } else {
+                    vscode.window.showErrorMessage('No active editor found.');
             }
+
+        } catch (error) {
+            vscode.window.showErrorMessage('Error: ' + error);
+        }
+
+
         })
     );
 }
@@ -112,10 +120,14 @@ export function parseListTable(tableText: string): TableRow[] {
     const lines = tableText.split('\n');
     let currentRow: TableRow | null = null;
     let currentColIndex = 0;
+    let firstRowFound = false;
 
-    for (const line of lines) {
+    for (let line of lines) {
+
+        line = line.replace(/\r/g, "");
+
         const trimmedLine = line.trim();
-        if (trimmedLine === '' || trimmedLine === ':::{list-table}' || trimmedLine === ':::') {
+        if ((trimmedLine === '' && firstRowFound == false) || trimmedLine === ':::{list-table}' || trimmedLine === ':::') {
             continue; // Пропускаем пустые строки, начало и конец таблицы
         }
 
@@ -128,6 +140,7 @@ export function parseListTable(tableText: string): TableRow[] {
             currentColIndex = 1;
             const cellContent = line.slice(4);
             currentRow[`col${currentColIndex}`] = cellContent.trimEnd();
+            firstRowFound = true;
         } else if (line.startsWith('  - ')) {
             // Новая ячейка в текущей строке
             if (currentRow === null) {
@@ -136,7 +149,7 @@ export function parseListTable(tableText: string): TableRow[] {
             currentColIndex++;
             const cellContent = line.slice(4);
             currentRow[`col${currentColIndex}`] = cellContent.trimEnd();
-        } else if (line.startsWith('    ')) {
+        } else if (line.startsWith('    ') || line === '') {
             // Продолжение текущей ячейки
             if (currentRow === null || currentColIndex === 0) {
                 throw new Error("Continuation encountered without an active cell.");
@@ -145,13 +158,22 @@ export function parseListTable(tableText: string): TableRow[] {
             currentRow[`col${currentColIndex}`] += '\n' + additionalContent.trimEnd();
         } else {
             // Неожиданная ситуация
-            throw new Error(`Unexpected line format: ${line}`);
+            throw new Error(`Unexpected line format: '${line}'`);
         }
     }
 
     // Добавляем последнюю строку, если она существует
     if (currentRow !== null) {
         rows.push(currentRow);
+    }
+
+    // Применяем ltrim ко всем значениям в rows
+    for (const row of rows) {
+        for (const key in row) {
+            if (row.hasOwnProperty(key)) {
+                row[key] = row[key].trimEnd()
+            }
+        }
     }
 
     return rows;
@@ -233,10 +255,10 @@ function updateTableInDocument(editor: vscode.TextEditor, tableData: any[]) {
         if (success) {
             // Set the new cursor position to be right after `:::{list-table}`
             const newCursorPos = editor.document.positionAt(startTablePosition + ':::{list-table}\n'.length);
-            
+
             // Update the selection to the new cursor position
             editor.selection = new vscode.Selection(newCursorPos, newCursorPos);
-            
+
             // Reveal the new cursor position in the editor
             editor.revealRange(new vscode.Range(newCursorPos, newCursorPos), vscode.TextEditorRevealType.InCenter);
         }
@@ -257,4 +279,4 @@ function getNonce() {
     return text;
 }
 
-export function deactivate() {}
+export function deactivate() { }

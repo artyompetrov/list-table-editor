@@ -141,7 +141,7 @@ function sanitizeHTML(value:string){
         // ---- Обработка нажатий клавиш, преобразование «на лету» ----
         input.addEventListener("keydown", (e) => {
             // Если зажата Ctrl или Meta (Cmd на Mac), пропускаем «на лету» обработку
-            if (e.ctrlKey || e.metaKey) {
+            if (e.ctrlKey || e.metaKey || e.shiftKey) {
                 return;
             }
 

@@ -5,14 +5,14 @@ suite('parseListTable Tests', () => {
     test('Empty input string should return empty array', () => {
         const input = '';
         const expected: any[] = [];
-        const result = parseListTable(input);
+        const result = parseListTable(input)[1];
         assert.deepStrictEqual(result, expected);
     });
 
     test('Single row with single cell', () => {
         const input = '* - Cell content';
         const expected = [{ col1: 'Cell content' }];
-        const result = parseListTable(input);
+        const result = parseListTable(input)[1];
         assert.deepStrictEqual(result, expected);
     });
 
@@ -27,7 +27,7 @@ suite('parseListTable Tests', () => {
             { col1: 'Row 2' },
             { col1: 'Row 3' },
         ];
-        const result = parseListTable(input);
+        const result = parseListTable(input)[1];
         assert.deepStrictEqual(result, expected);
     });
 
@@ -38,7 +38,7 @@ suite('parseListTable Tests', () => {
   - Cell 3
         `;
         const expected = [{ col1: 'Cell 1', col2: 'Cell 2', col3: 'Cell 3' }];
-        const result = parseListTable(input);
+        const result = parseListTable(input)[1];
         assert.deepStrictEqual(result, expected);
     });
 
@@ -53,7 +53,7 @@ suite('parseListTable Tests', () => {
             { col1: 'Row1 Cell1', col2: 'Row1 Cell2' },
             { col1: 'Row2 Cell1', col2: 'Row2 Cell2' },
         ];
-        const result = parseListTable(input);
+        const result = parseListTable(input)[1];
         assert.deepStrictEqual(result, expected);
     });
 
@@ -71,7 +71,7 @@ suite('parseListTable Tests', () => {
                 col2: 'Cell 2 Line 1\nCell 2 Line 2',
             },
         ];
-        const result = parseListTable(input);
+        const result = parseListTable(input)[1];
         assert.deepStrictEqual(result, expected);
     });
 
@@ -96,7 +96,7 @@ suite('parseListTable Tests', () => {
                 col2: 'Cell3\n- Cell4',
             },
         ];
-        const result = parseListTable(input);
+        const result = parseListTable(input)[1];
         assert.deepStrictEqual(result, expected);
     });
 
@@ -114,7 +114,28 @@ suite('parseListTable Tests', () => {
             { col1: 'Row2 Cell1', col2: 'Row2 Cell2' },
             { col1: 'Row3 Cell1' },
         ];
-        const result = parseListTable(input);
+        const result = parseListTable(input)[1];
+        assert.deepStrictEqual(result, expected);
+    });
+
+    
+    test('Empty lines in cells', () => {
+        const input = `
+* - Row1 Cell1
+    
+    t
+  - Row1 Cell2
+  - Row1 Cell3
+* - Row2 Cell1
+  - Row2 Cell2
+* - Row3 Cell1
+        `;
+        const expected = [
+            { col1: 'Row1 Cell1\n\nt', col2: 'Row1 Cell2', col3: 'Row1 Cell3' },
+            { col1: 'Row2 Cell1', col2: 'Row2 Cell2' },
+            { col1: 'Row3 Cell1' },
+        ];
+        const result = parseListTable(input)[1];
         assert.deepStrictEqual(result, expected);
     });
 });

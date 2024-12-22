@@ -108,6 +108,31 @@ function sanitizeHTML(value:string){
       
         // При выходе из фокуса — завершаем (сохраняем)
         input.addEventListener("blur", finishEditing);
+
+        input.addEventListener("copy", (e: ClipboardEvent) => {
+            // Получим границы выделения
+            const start = input.selectionStart ?? 0;
+            const end = input.selectionEnd ?? 0;
+          
+            // Если действительно что-то выделено
+            if (end > start) {
+              // Берём «визуальный» текст из textarea
+              const selectedText = input.value.substring(start, end);
+          
+              // Превращаем обратно в «чистый» текст
+              const realText = hideInvisibleChars(selectedText);
+          
+              // Кладём наш "очищенный" текст в буфер обмена
+              // (нужно отменить действие по умолчанию, иначе браузер скопирует как есть)
+              e.preventDefault();
+          
+              // В некоторых браузерах clipboardData может быть undefined — проверьте
+              // (для безопасности или полифилы). В современном Chrome/Firefox всё работает.
+              if (e.clipboardData) {
+                e.clipboardData.setData("text/plain", realText);
+              }
+            }
+          });
       
       
         // Специальный флаг для Shift+Enter
@@ -115,6 +140,11 @@ function sanitizeHTML(value:string){
       
         // ---- Обработка нажатий клавиш, преобразование «на лету» ----
         input.addEventListener("keydown", (e) => {
+            // Если зажата Ctrl или Meta (Cmd на Mac), пропускаем «на лету» обработку
+            if (e.ctrlKey || e.metaKey) {
+                return;
+            }
+
           // Сбросим флаг перед каждой клавишей
           lastWasEnter = false;
       

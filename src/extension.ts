@@ -7,7 +7,10 @@ export function activate(context: vscode.ExtensionContext) {
 
             if (editor) {
                 // Шаблон таблицы в формате list-table
-                const tableTemplate = `:::{list-table}\n\n` +
+                const tableTemplate = `:::{list-table}\n` +
+                    `:header-rows: 1\n` +
+                    `:stub-columns: 0\n` +
+                    `\n` +
                     `* - \n` +
                     `  - \n\n` +
                     `* - \n` +
@@ -71,7 +74,7 @@ export function activate(context: vscode.ExtensionContext) {
                     }
 
                     // Parse the table content between the markers
-                    const parsedTable = parseListTable(selectedText);
+                    const [paramLines, parsedTable] = parseListTable(selectedText);
 
                     // Create and show the webview panel for table editing
                     const panel = vscode.window.createWebviewPanel(
@@ -84,14 +87,14 @@ export function activate(context: vscode.ExtensionContext) {
                         }
                     );
 
-                    panel.webview.html = getWebviewContent(panel.webview, context.extensionUri, parsedTable);
+                    panel.webview.html = getWebviewContent(panel.webview, context.extensionUri, paramLines, parsedTable);
 
                     // Handle messages from the webview
                     panel.webview.onDidReceiveMessage(
                         message => {
                             switch (message.command) {
                                 case 'updateTable':
-                                    updateTableInDocument(editor, message.data);
+                                    updateTableInDocument(editor, message.params, message.data);
                                     break;
                             }
                         },
@@ -115,8 +118,10 @@ interface TableRow {
     [key: string]: string;
 }
 
-export function parseListTable(tableText: string): TableRow[] {
+export function parseListTable(tableText: string): [string[], TableRow[]] {
     const rows: TableRow[] = [];
+    const paramLines = [];
+    const paramRegex = /^:[a-zA-Z0-9\-]+:.*$/;
     const lines = tableText.split('\n');
     let currentRow: TableRow | null = null;
     let currentColIndex = 0;
@@ -156,7 +161,10 @@ export function parseListTable(tableText: string): TableRow[] {
             }
             const additionalContent = line.slice(4);
             currentRow[`col${currentColIndex}`] += '\n' + additionalContent.trimEnd();
-        } else {
+        } else if (firstRowFound == false && paramRegex.test(line)) {
+            paramLines.push(line)
+        }
+        else {
             // Неожиданная ситуация
             throw new Error(`Unexpected line format: '${line}'`);
         }
@@ -176,11 +184,11 @@ export function parseListTable(tableText: string): TableRow[] {
         }
     }
 
-    return rows;
+    return [paramLines, rows];
 }
 
 
-function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, tableData: any[]) {
+function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, paramLines: string[], tableData: any[]) {
     const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'tableEditor.js'));
 
     const nonce = getNonce();
@@ -200,6 +208,7 @@ function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, ta
     </head>
     <body>
         <button id="saveButton">Сохранить</button>
+        <div id="param-lines" style="display: none;">${JSON.stringify(paramLines)}</div>
         <div id="table-data" style="display: none;">${JSON.stringify(tableData)}</div>
         <div id="table"></div>
         <script nonce="${nonce}" src="${scriptUri}"></script>
@@ -208,9 +217,13 @@ function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, ta
     `;
 }
 
-function updateTableInDocument(editor: vscode.TextEditor, tableData: any[]) {
+function updateTableInDocument(editor: vscode.TextEditor, paramLines: string[], tableData: any[]) {
     // Convert data back to list-table format
-    let newTableText = '';
+    let newTableText = '\n';
+
+    if (paramLines.length > 0) {
+        newTableText = paramLines.join('\n') + '\n\n'
+    }
 
     tableData.forEach(row => {
         newTableText += '* - ' + Object.values(row)
@@ -218,7 +231,7 @@ function updateTableInDocument(editor: vscode.TextEditor, tableData: any[]) {
             .join('\n  - ') + '\n\n';
     });
 
-    newTableText = ":::{list-table}\n\n" + newTableText + ":::";
+    newTableText = ":::{list-table}\n" + newTableText + ":::";
 
     // Get the document text
     const documentText = editor.document.getText();

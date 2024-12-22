@@ -44,6 +44,15 @@ function sanitizeHTML(value:string){
     }
 
 
+    const paramLinesElement = document.getElementById('param-lines');
+    
+    if (!paramLinesElement) {
+        console.error('Element with id "param-lines" not found');
+        return;
+    }
+
+    const paramLines  = JSON.parse(paramLinesElement.textContent || '[]');
+
     const customTextAreaFormatter: Formatter = function(cell: CellComponent, formatterParams, onRendered){
 
         return emptyToSpace(sanitizeHTML(cell.getValue()))
@@ -157,7 +166,7 @@ function sanitizeHTML(value:string){
             return rowData;
         });
         
-        vscode.postMessage({ command: 'updateTable', data: tableData });
+        vscode.postMessage({ command: 'updateTable', params: paramLines, data: tableData });
         });
     } else {
         console.error('Save button not found');

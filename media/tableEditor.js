@@ -30362,6 +30362,12 @@ function sanitizeHTML(value) {
         console.error('Element with id "table-data" not found');
         return;
     }
+    const paramLinesElement = document.getElementById('param-lines');
+    if (!paramLinesElement) {
+        console.error('Element with id "param-lines" not found');
+        return;
+    }
+    const paramLines = JSON.parse(paramLinesElement.textContent || '[]');
     const customTextAreaFormatter = function (cell, formatterParams, onRendered) {
         return emptyToSpace(sanitizeHTML(cell.getValue()))
             .replace(/ /g, '<span class="invisible-symbol">·</span>')
@@ -30458,7 +30464,7 @@ function sanitizeHTML(value) {
                 });
                 return rowData;
             });
-            vscode.postMessage({ command: 'updateTable', data: tableData });
+            vscode.postMessage({ command: 'updateTable', params: paramLines, data: tableData });
         });
     }
     else {

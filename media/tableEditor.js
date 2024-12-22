@@ -30582,6 +30582,11 @@ function sanitizeHTML(value) {
             }
         ],
     });
+    // пересчет размера ячеек
+    table.on("cellEdited", function (cell) {
+        // cell - объект CellComponent, если нужно
+        table.redraw(true); // true - полностью пересчитать всё
+    });
     const saveButton = document.getElementById('saveButton');
     if (saveButton) {
         console.log('Save button not found');

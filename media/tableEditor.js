@@ -30373,6 +30373,87 @@ function sanitizeHTML(value) {
             .replace(/ /g, '<span class="invisible-symbol">·</span>')
             .replace(/\n/g, '<span class="invisible-symbol">↵</span><br>');
     };
+    function showInvisibleChars(str) {
+        // преобразуем пробелы и переводы строк
+        return str
+            .replace(/ /g, "·")
+            .replace(/\n/g, "↵\n");
+    }
+    function hideInvisibleChars(str) {
+        // возвращаем обратно реальные пробелы и переводы строк
+        return str
+            .replace(/·/g, " ")
+            // обратите внимание, что '\n' на самом деле тоже останется,
+            // так как мы записали "↵\n", поэтому нужно сначала убрать "↵",
+            // потом оставить сам перенос строки
+            .replace(/↵/g, "");
+    }
+    function customInvisibleEditor(cell, onRendered, success, cancel, editorParams) {
+        // Текущее реальное значение ячейки
+        const originalValue = (cell.getValue() || "").toString();
+        // Создаём <textarea>
+        const input = document.createElement("textarea");
+        // Базовые стили, чтобы вписаться в ячейку (при необходимости расширяйте)
+        input.style.width = "100%";
+        input.style.height = "100%";
+        input.style.padding = "3px";
+        input.style.resize = "none"; // чтобы нельзя было вручную тянуть <textarea> за угол
+        // Превращаем пробелы/переносы в "·" / "↵", чтобы при показе уже визуализировать
+        input.value = showInvisibleChars(originalValue);
+        // Когда редактор "отрисован", ставим фокус
+        onRendered(() => {
+            input.focus();
+        });
+        // При выходе из фокуса (blur) — сохраняем
+        input.addEventListener("blur", () => {
+            finishEditing();
+        });
+        // По Enter без Shift — сохраняем
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                finishEditing();
+            }
+        });
+        // По Esc — отменяем
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                cancel({});
+            }
+        });
+        // ———————————————————————————————————————————————————
+        // "На лету" меняем символы при каждом нажатии клавиши
+        // ———————————————————————————————————————————————————
+        input.addEventListener("keydown", () => {
+            // Ждём, пока текст вставится (так как keydown ещё до изменения .value)
+            setTimeout(() => {
+                // 1) Запоминаем позицию курсора
+                let pos = input.selectionStart;
+                // 2) Получаем «видимый» в <textarea> текст, превращаем в обычный
+                let currentInvisible = input.value;
+                let realValue = hideInvisibleChars(currentInvisible);
+                // 3) Снова отображаем как "·"/"↵"
+                let replaced = showInvisibleChars(realValue);
+                // 4) Устанавливаем .value
+                input.value = replaced;
+                // 5) Восстанавливаем курсор
+                //  - Если pos вышел за пределы строки, ставим в конец
+                if (pos > replaced.length) {
+                    pos = replaced.length;
+                }
+                // Устанавливаем selectionRange
+                input.selectionStart = pos;
+                input.selectionEnd = pos;
+            }, 0);
+        });
+        // Когда пользователь «завершает» редактирование
+        function finishEditing() {
+            // При сохранении превращаем все "·"/"↵" обратно в реальные пробелы и \n
+            let finalValue = hideInvisibleChars(input.value);
+            success(finalValue);
+        }
+        return input;
+    }
     const tableData = JSON.parse(tableDataElement.textContent || '[]');
     let i = 0;
     // Создаем таблицу с помощью Tabulator
@@ -30385,7 +30466,7 @@ function sanitizeHTML(value) {
         },
         columnDefaults: {
             maxWidth: 700,
-            editor: "textarea",
+            editor: /*"textarea"*/ customInvisibleEditor,
             headerSort: false,
             formatter: /*"textarea" */ customTextAreaFormatter,
             headerContextMenu: [

@@ -4,7 +4,7 @@ A Visual Studio Code extension for editing `list-table` directives used in Sphin
 
 ## Why
 
-Sphinx supports two kinds of tables: **grid tables** and **list tables**. Grid tables are difficult to edit, often require specialized editors such as Emacs and tend to produce heavy merge conflicts in a docs-as-code workflow. List tables are easier to maintain in version control but they are cumbersome to write by hand.
+Sphinx supports two kinds of tables: [grid tables](https://tables-with-sphinx.readthedocs.io/en/latest/grid-table.html) and [list tables](https://sublime-and-sphinx-guide.readthedocs.io/en/latest/tables.html). Grid tables are difficult to edit, often require specialized editors such as Emacs and tend to produce heavy merge conflicts in a docs-as-code workflow. List tables are easier to maintain in version control but they are cumbersome to write by hand.
 
 **List Table Editor** removes this friction by providing a small helper for creating and editing list tables directly from VS Code.
 

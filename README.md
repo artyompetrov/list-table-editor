@@ -17,8 +17,8 @@ Sphinx supports two kinds of tables: **grid tables** and **list tables**. Grid t
 
 ## Installation
 
-1. Install from the VS Code Marketplace (coming soon) or clone this repository.
-2. Run `npm run package` to build the extension and install the generated `.vsix` with `code --install-extension <file>.vsix`.
+1. Download the latest `.vsix` from [GitHub Releases](https://github.com/artyompetrov/list-table-editor/releases) and install it with `code --install-extension <file>.vsix`.
+2. Alternatively, clone this repository and run `npm run package` to build the extension from source, then install the generated `.vsix` with `code --install-extension <file>.vsix`.
 
 ## Usage
 

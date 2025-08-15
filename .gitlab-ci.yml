@@ -1,0 +1,27 @@
+image: node:20
+
+stages:
+  - test
+  - build
+
+# Install dependencies once per job
+cache:
+  paths:
+    - node_modules/
+
+test:
+  stage: test
+  script:
+    - npm ci
+    - npm test
+
+build:
+  stage: build
+  needs:
+    - test
+  script:
+    - npm ci
+    - npx --yes @vscode/vsce package -o list-table-editor.vsix
+  artifacts:
+    paths:
+      - list-table-editor.vsix

@@ -4,6 +4,7 @@
   "description": "An extension to edit list-tables in Markdown files",
   "repository": "https://github.com/artyompetrov/list-table-editor/",
   "version": "0.0.3",
+  "license": "GPL-2.0-only",
   "engines": {
     "vscode": "^1.94.0"
   },

@@ -1,25 +1,53 @@
-# list-table-editor README
+# List Table Editor
 
-This extension helps to work with sphinx list tables
+A Visual Studio Code extension for editing `list-table` directives used in Sphinx and MyST Markdown documentation.
 
-![img](https://github.com/artyompetrov/list-table-editor/blob/master/img/image%201.png)
+## Why
 
-![img](https://github.com/artyompetrov/list-table-editor/blob/master/img/image%202.png)
+Sphinx supports two kinds of tables: **grid tables** and **list tables**. Grid tables are difficult to edit, often require specialized editors such as Emacs and tend to produce heavy merge conflicts in a docs-as-code workflow. List tables are easier to maintain in version control but they are cumbersome to write by hand.
 
-![img](https://github.com/artyompetrov/list-table-editor/blob/master/img/image%203.png)
+**List Table Editor** removes this friction by providing a small helper for creating and editing list tables directly from VS Code.
 
-![img](https://github.com/artyompetrov/list-table-editor/blob/master/img/image%204.png)
+## Features
 
+- Insert a ready-to-fill `list-table` directive at the cursor.
+- Open an interactive editor for an existing list table. The extension shows the table in a grid (powered by Tabulator) and saves the result back as a `list-table`.
+- Works with Markdown/MyST files compiled by Sphinx.
+- Built for teams using the docs-as-code approach where clean diffs and conflict-free tables matter.
+
+## Installation
+
+You can install the extension from a pre-built release or by building it yourself.
+
+1. **Download release** – grab the latest `.vsix` from the [GitHub releases](https://github.com/artyompetrov/list-table-editor/releases) and install it with `code --install-extension <file>.vsix`.
+2. **Build from source** – clone this repository and run `npm run package` to produce a `.vsix`, then install it with `code --install-extension <file>.vsix`.
+
+## Usage
+
+- **Insert List Table**: Adds a skeleton `:::{list-table}` block with minimal parameters.
+- **Open List Table Editor**: Opens the interactive table editor for the table under the cursor.
+
+![List Table Editor](https://github.com/artyompetrov/list-table-editor/blob/master/img/image%201.png)
+
+![Editing table](https://github.com/artyompetrov/list-table-editor/blob/master/img/image%202.png)
+
+![Saving table](https://github.com/artyompetrov/list-table-editor/blob/master/img/image%203.png)
+
+![Resulting directive](https://github.com/artyompetrov/list-table-editor/blob/master/img/image%204.png)
+
+## Example `list-table`
+
+```
 :::{list-table}
 :header-rows: 1
 :stub-columns: 0
 
-* - мваы выа ы
-    аымыва 
-    в
-  - 
+* - Header 1
+  - Header 2
 
-* - 
-  - 
+* - Cell 1
+  - Cell 2
 
 :::
+```
+

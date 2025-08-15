@@ -1,0 +1,25 @@
+stages:
+  - test
+  - build
+
+test:
+  stage: test
+  image: node:18
+  before_script:
+    - apt-get update
+    - apt-get install -y --no-install-recommends libgtk-3-0 libatk1.0-0 libatk-bridge2.0-0 libnss3 libxss1 libx11-xcb1 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libxrender1 libxtst6 libcups2 libdrm2 libgbm1 libasound2t64 xvfb
+  script:
+    - npm ci
+    - xvfb-run -a npm test
+
+build:
+  stage: build
+  image: node:18
+  needs: ["test"]
+  script:
+    - npm ci
+    - npx -y @vscode/vsce package
+  artifacts:
+    name: Build
+    paths:
+      - "*.vsix"

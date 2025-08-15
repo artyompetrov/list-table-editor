@@ -1,0 +1,27 @@
+image: mcr.microsoft.com/devcontainers/typescript-node:20
+
+stages:
+  - test
+  - build
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+
+test:
+  stage: test
+  script:
+    - npm ci
+    - xvfb-run -a npm test
+
+build:
+  stage: build
+  needs: ["test"]
+  script:
+    - npm ci
+    - npm run package
+    - tar -czf extension.tar.gz dist media
+  artifacts:
+    paths:
+      - extension.tar.gz

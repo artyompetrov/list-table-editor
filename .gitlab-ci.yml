@@ -1,0 +1,28 @@
+image: mcr.microsoft.com/vscode/devcontainers/typescript-node:0-20
+
+stages:
+  - test
+  - build
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+
+Test:
+  stage: test
+  script:
+    - npm ci
+    - npm test
+
+Build:
+  stage: build
+  needs: ["Test"]
+  script:
+    - npm ci
+    - npm run package
+    - npx --yes @vscode/vsce package
+  artifacts:
+    name: "Build"
+    paths:
+      - "*.vsix"

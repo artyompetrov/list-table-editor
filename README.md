@@ -25,13 +25,13 @@ Sphinx supports two kinds of tables: [grid tables](https://tables-with-sphinx.re
 - **Insert List Table**: Adds a skeleton `:::{list-table}` block with minimal parameters.
 - **Open List Table Editor**: Opens the interactive table editor for the table under the cursor.
 
-![List Table Editor](https://github.com/artyompetrov/list-table-editor/blob/master/img/image%201.png)
+![List Table Editor](img/image%201.png)
 
-![Editing table](https://github.com/artyompetrov/list-table-editor/blob/master/img/image%202.png)
+![Editing table](img/image%202.png)
 
-![Saving table](https://github.com/artyompetrov/list-table-editor/blob/master/img/image%203.png)
+![Saving table](img/image%203.png)
 
-![Resulting directive](https://github.com/artyompetrov/list-table-editor/blob/master/img/image%204.png)
+![Resulting directive](img/image%204.png)
 
 ## Example `list-table`
 
